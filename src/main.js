@@ -577,11 +577,11 @@ function syncColorControls(forcedHsl) {
   }
   if (satSlider && satValue) {
     satSlider.value = Math.round(hslState.s * 100);
-    satValue.textContent = `${satSlider.value}%`;
+    satValue.textContent = `${satSlider.value}`;
   }
   if (lightSlider && lightValue) {
     lightSlider.value = Math.round(hslState.l * 100);
-    lightValue.textContent = `${lightSlider.value}%`;
+    lightValue.textContent = `${lightSlider.value}`;
   }
   updateSliderGradients();
 }
