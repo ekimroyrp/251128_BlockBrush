@@ -224,9 +224,9 @@ function createDistanceCircle() {
   }
   const geometry = new THREE.BufferGeometry().setFromPoints(tempPoints);
   const material = new THREE.LineBasicMaterial({
-    color: new THREE.Color('#ff9e00'),
+    color: new THREE.Color('#123c73'),
     transparent: true,
-    opacity: 0.65,
+    opacity: 0.75,
     depthTest: true,
     depthWrite: false
   });
