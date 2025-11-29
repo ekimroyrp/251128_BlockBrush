@@ -1,5 +1,5 @@
 :root {
-  --blueprint: #0c2b4f;
+  --blueprint: #6ca6df;
   --panel-line: rgba(255, 255, 255, 0.35);
   --panel-bg: rgba(255, 255, 255, 0.08);
   --panel-blur: blur(12px);
@@ -96,12 +96,20 @@ canvas {
   pointer-events: none;
 }
 
-#ui-handle {
+#ui-handle,
+#ui-handle-bottom {
   padding: 12px 14px;
   min-height: 18px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
-  border-bottom: 1px solid var(--border);
   cursor: grab;
+}
+
+#ui-handle {
+  border-bottom: 1px solid var(--border);
+}
+
+#ui-handle-bottom {
+  border-top: 1px solid var(--border);
 }
 
 .ui-body {

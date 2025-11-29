@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import './style.css';
 
 const container = document.getElementById('app');
-const blueprintColor = new THREE.Color('#0c2b4f');
+const blueprintColor = new THREE.Color('#6ca6df');
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -363,28 +363,36 @@ gridSlider.addEventListener('input', (event) => {
 });
 
 // Panel dragging
-const handle = document.getElementById('ui-handle');
+const handles = [
+  document.getElementById('ui-handle'),
+  document.getElementById('ui-handle-bottom')
+].filter(Boolean);
 let dragActive = false;
 const dragOffset = new THREE.Vector2();
-handle.addEventListener('pointerdown', (event) => {
+function onHandleDown(event) {
   dragActive = true;
   uiActive = true;
   dragOffset.set(event.clientX - uiPanel.offsetLeft, event.clientY - uiPanel.offsetTop);
-  handle.setPointerCapture(event.pointerId);
-  handle.style.cursor = 'grabbing';
-});
-handle.addEventListener('pointermove', (event) => {
+  event.currentTarget.setPointerCapture(event.pointerId);
+  event.currentTarget.style.cursor = 'grabbing';
+}
+function onHandleMove(event) {
   if (!dragActive) return;
   const left = event.clientX - dragOffset.x;
   const top = event.clientY - dragOffset.y;
   uiPanel.style.left = `${left}px`;
   uiPanel.style.top = `${top}px`;
-});
-handle.addEventListener('pointerup', (event) => {
+}
+function onHandleUp(event) {
   dragActive = false;
   uiActive = false;
-  handle.releasePointerCapture(event.pointerId);
-  handle.style.cursor = 'grab';
+  event.currentTarget.releasePointerCapture(event.pointerId);
+  event.currentTarget.style.cursor = 'grab';
+}
+handles.forEach((handleEl) => {
+  handleEl.addEventListener('pointerdown', onHandleDown);
+  handleEl.addEventListener('pointermove', onHandleMove);
+  handleEl.addEventListener('pointerup', onHandleUp);
 });
 
 // Resize handling
