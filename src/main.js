@@ -492,6 +492,7 @@ const swatches = Array.from(document.querySelectorAll('#color-swatches button'))
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
+let recentColors = swatches.map(() => '#ffffff');
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -550,6 +551,24 @@ function updateSliderGradients() {
     lightSlider.style.background = `linear-gradient(90deg, #000000, ${mid}, #ffffff)`;
   }
 }
+function currentHex() {
+  return `#${currentColor.getHexString()}`;
+}
+
+function renderRecentColors() {
+  swatches.forEach((btn, idx) => {
+    const col = recentColors[idx] || '#ffffff';
+    btn.style.background = col;
+    btn.setAttribute('data-color', col);
+  });
+}
+
+function addRecentColor(hex) {
+  if (!hex) return;
+  recentColors = [hex, ...recentColors].slice(0, swatches.length);
+  renderRecentColors();
+}
+
 function syncColorControls(forcedHsl) {
   const normalized = `#${currentColor.getHexString()}`;
   colorValue.textContent = normalized;
@@ -600,11 +619,16 @@ colorInput.addEventListener('input', (event) => {
 });
 function toggleColorPopover(forceState) {
   const next = typeof forceState === 'boolean' ? forceState : !colorPopoverOpen;
+  const wasOpen = colorPopoverOpen;
   colorPopoverOpen = next;
   if (colorPopover) {
     colorPopover.classList.toggle('hidden', !next);
     colorPopover.classList.toggle('open', next);
-    if (next) syncColorControls();
+    if (next) {
+      syncColorControls();
+    } else if (wasOpen) {
+      addRecentColor(currentHex());
+    }
   }
 }
 if (colorChip) {
@@ -651,14 +675,10 @@ if (colorHexInput) {
   });
 }
 if (swatches.length > 0) {
-  swatches.forEach((btn) => {
-    const swatchColor = btn.getAttribute('data-color');
-    if (swatchColor) {
-      btn.style.background = swatchColor;
-    }
+  swatches.forEach((btn, idx) => {
     btn.addEventListener('click', () => {
-      const swatchColor = btn.getAttribute('data-color');
-      if (swatchColor) setBlockColor(swatchColor);
+      const swatchColor = recentColors[idx] || btn.getAttribute('data-color') || '#ffffff';
+      setBlockColor(swatchColor);
     });
   });
 }
@@ -789,4 +809,5 @@ if (!Number.isNaN(initialHue) && !Number.isNaN(initialSat) && !Number.isNaN(init
 } else {
   setBlockColor(initialHex);
 }
+renderRecentColors();
 addBlockAt({ x: 0, y: 0, z: 0 });
