@@ -213,6 +213,7 @@ input[type="range"] {
     opacity 160ms ease,
     transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
     backdrop-filter 160ms ease;
+  color: #f5f7fb;
 }
 
 .color-popover.hidden {
@@ -248,6 +249,11 @@ input[type="range"] {
     );
   pointer-events: none;
   border-radius: 12px;
+}
+
+.color-popover .color-hex,
+.color-popover #color-hex-input {
+  color: #f5f7fb;
 }
 
 .color-popover-header {
