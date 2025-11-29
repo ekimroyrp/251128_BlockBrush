@@ -161,6 +161,10 @@ const previewMesh = new THREE.Mesh(blockGeometry, previewMaterial);
 previewMesh.visible = false;
 scene.add(previewMesh);
 
+let buildRate = 10; // blocks per second
+let buildInterval = 1000 / buildRate;
+const lastActionTime = { add: -Infinity, remove: -Infinity };
+
 const hitBlocks = [];
 const hitPlane = [];
 const tempIndex = { x: 0, y: 0, z: 0 };
@@ -310,10 +314,17 @@ function updateHoverTarget() {
 
 function handlePaint() {
   if (!pointerState.down || uiActive) return;
+  const now = performance.now();
   if (hoverState.type === 'add' && hoverState.index) {
-    addBlockAt(hoverState.index);
+    if (now - lastActionTime.add >= buildInterval) {
+      addBlockAt(hoverState.index);
+      lastActionTime.add = now;
+    }
   } else if (hoverState.type === 'remove' && hoverState.key) {
-    removeBlockAt(hoverState.key);
+    if (now - lastActionTime.remove >= buildInterval) {
+      removeBlockAt(hoverState.key);
+      lastActionTime.remove = now;
+    }
   }
 }
 
@@ -324,6 +335,7 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
   if (event.button === 0 || event.button === 2) {
     pointerState.down = true;
     pointerState.mode = event.button === 0 ? 'add' : 'remove';
+    lastActionTime[pointerState.mode] = -Infinity; // allow immediate first action
     renderer.domElement.setPointerCapture(event.pointerId);
     updatePointer(event);
     updateHoverTarget();
@@ -352,6 +364,8 @@ renderer.domElement.addEventListener('pointerleave', () => {
 // UI slider
 const gridSlider = document.getElementById('grid-size');
 const gridValue = document.getElementById('grid-size-value');
+const buildSlider = document.getElementById('build-speed');
+const buildValue = document.getElementById('build-speed-value');
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -360,6 +374,14 @@ function setGridSize(value) {
 }
 gridSlider.addEventListener('input', (event) => {
   setGridSize(parseFloat(event.target.value));
+});
+function setBuildRate(value) {
+  buildRate = value;
+  buildInterval = 1000 / buildRate;
+  buildValue.textContent = `${Math.round(buildRate)}/s`;
+}
+buildSlider.addEventListener('input', (event) => {
+  setBuildRate(parseFloat(event.target.value));
 });
 
 // Panel dragging
@@ -415,4 +437,5 @@ renderer.setAnimationLoop(tick);
 
 // Initialize UI value and a starter block
 setGridSize(parseFloat(gridSlider.value));
+setBuildRate(parseFloat(buildSlider.value));
 addBlockAt({ x: 0, y: 0, z: 0 });
