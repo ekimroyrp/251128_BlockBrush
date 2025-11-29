@@ -603,6 +603,7 @@ function toggleColorPopover(forceState) {
   colorPopoverOpen = next;
   if (colorPopover) {
     colorPopover.classList.toggle('hidden', !next);
+    colorPopover.classList.toggle('open', next);
     if (next) syncColorControls();
   }
 }
