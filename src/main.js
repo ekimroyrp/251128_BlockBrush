@@ -115,10 +115,10 @@ scene.add(ambient);
 // Shadow receiver plane
 const shadowPlane = new THREE.Mesh(
   new THREE.PlaneGeometry(4000, 4000),
-  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.2 })
+  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.22 })
 );
 shadowPlane.rotation.x = -Math.PI / 2;
-shadowPlane.position.y = 0.0001;
+shadowPlane.position.y = -0.01;
 shadowPlane.receiveShadow = true;
 scene.add(shadowPlane);
 
@@ -169,7 +169,7 @@ const gridMesh = new THREE.Mesh(
   gridMaterial
 );
 gridMesh.rotation.x = -Math.PI / 2;
-gridMesh.position.y = 0.0002;
+gridMesh.position.y = 0.002;
 scene.add(gridMesh);
 
 // Blocks
