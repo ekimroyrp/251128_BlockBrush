@@ -1,17 +1,21 @@
 # 251128_BlockBrush
 
-BlockBrush is an early-stage project focused on building a block-based painting and level-building toolkit; this repository will house prototypes, tools, and documentation as the project grows.
+BlockBrush is a blueprint-styled Three.js prototype for painting and erasing voxel blocks on an infinite, fading grid. It demonstrates a draggable UI panel, adjustable grid size, and mouse-driven block placement/removal with orbit/pan camera controls.
 
 ## Features
-- Planned: block painting and erasing with adjustable brush sizes
-- Planned: color palette management for voxel fills
-- Planned: import/export flows for sharing builds
-- Planned: lightweight UI for quick iteration and testing
+- Infinite blueprint grid with distance fade and white lines
+- Draggable, translucent UI panel with grid-size slider
+- Block painting (LMB drag) and erasing (RMB drag) snapped to grid, stacking on hit faces
+- Orbit (MMB), pan (Shift+MMB), and scroll zoom camera controls
 
 ## Getting Started
 1. Clone the repository: `git clone https://github.com/ekimroyrp/251128_BlockBrush.git`
 2. Navigate into the project: `cd 251128_BlockBrush`
-3. Setup steps will be documented here once the first prototype is ready.
+3. Install dependencies: `npm install`
+4. Run the dev server: `npm run dev`
+5. Build for production: `npm run build`
 
 ## Controls
-Controls will be documented alongside the first interactive build; expect standard camera movement and brush hotkeys to be listed here.
+- Left click + drag: add blocks on grid or stack onto hit faces
+- Right click + drag: delete blocks under cursor
+- Middle mouse: orbit; Shift + middle mouse: pan; Scroll: zoom
