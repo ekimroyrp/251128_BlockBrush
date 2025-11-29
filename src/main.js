@@ -3,13 +3,14 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import './style.css';
 
 const container = document.getElementById('app');
-const blueprintColor = new THREE.Color('#b8d7f5');
+const blueprintColor = new THREE.Color('#6ca6df');
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.domElement.style.touchAction = 'none';
 container.appendChild(renderer.domElement);
 
 // Scene setup
@@ -28,7 +29,7 @@ camera.position.set(12, 10, 12);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
-controls.enablePan = false;
+controls.enablePan = true;
 controls.enableRotate = true;
 controls.enableZoom = true;
 controls.mouseButtons.LEFT = null;
@@ -74,6 +75,12 @@ renderer.domElement.addEventListener(
   },
   { passive: true }
 );
+window.addEventListener('keyup', (event) => {
+  if (event.key === 'Shift' && isPanning) {
+    isPanning = false;
+    controls.enableRotate = true;
+  }
+});
 
 // Lights
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x6a7a8b, 1.0);
@@ -92,7 +99,7 @@ const gridMaterial = new THREE.ShaderMaterial({
     uColor: { value: new THREE.Color('#ffffff') },
     uFadeStart: { value: 30.0 },
     uFadeEnd: { value: 120.0 },
-    uLineThickness: { value: 0.6 }
+    uLineThickness: { value: 0.075 }
   },
   vertexShader: `
     varying vec3 vWorldPosition;
@@ -142,17 +149,34 @@ const blockMaterial = new THREE.MeshStandardMaterial({
   roughness: 0.35,
   metalness: 0.05
 });
+const previewMaterial = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#7ce8ff'),
+  roughness: 0.4,
+  metalness: 0,
+  transparent: true,
+  opacity: 0.35,
+  depthWrite: false
+});
+const previewMesh = new THREE.Mesh(blockGeometry, previewMaterial);
+previewMesh.visible = false;
+scene.add(previewMesh);
+
+const hitBlocks = [];
+const hitPlane = [];
+const tempIndex = { x: 0, y: 0, z: 0 };
+const tempNormal = new THREE.Vector3(0, 1, 0);
 
 function indexKey(index) {
   return `${index.x}|${index.y}|${index.z}`;
 }
 
-function worldPositionFromIndex(index) {
-  return new THREE.Vector3(
+function setPositionFromIndex(target, index) {
+  target.set(
     index.x * gridSize,
     index.y * gridSize + gridSize * 0.5,
     index.z * gridSize
   );
+  return target;
 }
 
 function addBlockAt(index) {
@@ -160,7 +184,7 @@ function addBlockAt(index) {
   if (blocks.has(key)) return;
   const mesh = new THREE.Mesh(blockGeometry, blockMaterial);
   mesh.scale.setScalar(gridSize);
-  mesh.position.copy(worldPositionFromIndex(index));
+  setPositionFromIndex(mesh.position, index);
   mesh.castShadow = false;
   mesh.receiveShadow = true;
   mesh.userData.index = { ...index };
@@ -180,14 +204,20 @@ function resnapBlocks() {
   blocks.forEach((mesh) => {
     const idx = mesh.userData.index;
     mesh.scale.setScalar(gridSize);
-    mesh.position.copy(worldPositionFromIndex(idx));
+    setPositionFromIndex(mesh.position, idx);
   });
+  if (previewMesh.visible && hoverState.index) {
+    previewMesh.scale.setScalar(gridSize);
+    setPositionFromIndex(previewMesh.position, hoverState.index);
+  }
 }
 
 // Interaction
 const pointer = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 const pointerState = { down: false, mode: null };
+const hoverState = { type: null, index: null, key: null };
+let hoverDirty = true;
 
 let uiActive = false;
 const uiPanel = document.getElementById('ui-panel');
@@ -204,48 +234,86 @@ uiPanel.addEventListener('pointerleave', () => {
 function updatePointer(event) {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  hoverDirty = true;
 }
 
-function getAddTarget() {
-  // Try stacking on existing blocks
-  const blockHits = raycaster.intersectObjects(blockGroup.children, false);
-  if (blockHits.length > 0) {
-    const hit = blockHits[0];
-    const baseIndex = hit.object.userData.index;
-    const normal = hit.face?.normal || new THREE.Vector3(0, 1, 0);
-    const target = {
-      x: baseIndex.x + Math.round(normal.x),
-      y: baseIndex.y + Math.round(normal.y),
-      z: baseIndex.z + Math.round(normal.z)
-    };
-    return target;
+function setPreview(type, targetIndex, targetKey) {
+  if (!targetIndex) {
+    previewMesh.visible = false;
+    hoverState.type = null;
+    hoverState.index = null;
+    hoverState.key = null;
+    return;
+  }
+  hoverState.type = type;
+  hoverState.index = targetIndex;
+  hoverState.key = targetKey || null;
+  previewMesh.visible = true;
+  previewMesh.scale.setScalar(gridSize);
+  setPositionFromIndex(previewMesh.position, targetIndex);
+  previewMaterial.color.set(type === 'remove' ? '#ff7f7f' : '#7ce8ff');
+}
+
+function updateHoverTarget() {
+  if (uiActive) {
+    setPreview(null, null);
+    hoverDirty = false;
+    return;
   }
 
-  // Otherwise place on the ground plane
-  const planeHits = raycaster.intersectObject(gridMesh, false);
-  if (planeHits.length > 0) {
-    const point = planeHits[0].point;
-    return {
-      x: Math.round(point.x / gridSize),
-      y: 0,
-      z: Math.round(point.z / gridSize)
-    };
+  raycaster.setFromCamera(pointer, camera);
+  hitBlocks.length = 0;
+  hitPlane.length = 0;
+  raycaster.intersectObjects(blockGroup.children, false, hitBlocks);
+  raycaster.intersectObject(gridMesh, false, hitPlane);
+
+  if (pointerState.mode === 'remove') {
+    if (hitBlocks.length > 0) {
+      const hit = hitBlocks[0];
+      setPreview('remove', { ...hit.object.userData.index }, hit.object.userData.key);
+    } else {
+      setPreview(null, null);
+    }
+    hoverDirty = false;
+    return;
   }
-  return null;
+
+  if (hitBlocks.length > 0) {
+    const hit = hitBlocks[0];
+    const baseIndex = hit.object.userData.index;
+    if (hit.face && hit.face.normal) {
+      tempNormal.copy(hit.face.normal);
+    } else {
+      tempNormal.set(0, 1, 0);
+    }
+    tempIndex.x = baseIndex.x + Math.round(tempNormal.x);
+    tempIndex.y = baseIndex.y + Math.round(tempNormal.y);
+    tempIndex.z = baseIndex.z + Math.round(tempNormal.z);
+    setPreview('add', { ...tempIndex }, null);
+    hoverDirty = false;
+    return;
+  }
+
+  if (hitPlane.length > 0) {
+    const point = hitPlane[0].point;
+    tempIndex.x = Math.round(point.x / gridSize);
+    tempIndex.y = 0;
+    tempIndex.z = Math.round(point.z / gridSize);
+    setPreview('add', { ...tempIndex }, null);
+    hoverDirty = false;
+    return;
+  }
+
+  setPreview(null, null);
+  hoverDirty = false;
 }
 
 function handlePaint() {
   if (!pointerState.down || uiActive) return;
-  raycaster.setFromCamera(pointer, camera);
-  if (pointerState.mode === 'add') {
-    const target = getAddTarget();
-    if (target) addBlockAt(target);
-  } else if (pointerState.mode === 'remove') {
-    const hits = raycaster.intersectObjects(blockGroup.children, false);
-    if (hits.length > 0) {
-      const key = hits[0].object.userData.key;
-      removeBlockAt(key);
-    }
+  if (hoverState.type === 'add' && hoverState.index) {
+    addBlockAt(hoverState.index);
+  } else if (hoverState.type === 'remove' && hoverState.key) {
+    removeBlockAt(hoverState.key);
   }
 }
 
@@ -258,12 +326,14 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
     pointerState.mode = event.button === 0 ? 'add' : 'remove';
     renderer.domElement.setPointerCapture(event.pointerId);
     updatePointer(event);
+    updateHoverTarget();
     handlePaint();
   }
 });
 
 renderer.domElement.addEventListener('pointermove', (event) => {
   updatePointer(event);
+  if (hoverDirty) updateHoverTarget();
   handlePaint();
 });
 
@@ -272,7 +342,11 @@ renderer.domElement.addEventListener('pointerup', (event) => {
     pointerState.down = false;
     pointerState.mode = null;
     renderer.domElement.releasePointerCapture(event.pointerId);
+    updateHoverTarget();
   }
+});
+renderer.domElement.addEventListener('pointerleave', () => {
+  setPreview(null, null);
 });
 
 // UI slider
@@ -323,6 +397,9 @@ window.addEventListener('resize', () => {
 
 // Animation loop
 function tick() {
+  if (hoverDirty && !pointerState.down) {
+    updateHoverTarget();
+  }
   controls.update();
   renderer.render(scene, camera);
 }

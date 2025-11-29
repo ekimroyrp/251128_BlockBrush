@@ -1,5 +1,5 @@
 :root {
-  --blueprint: #b8d7f5;
+  --blueprint: #6ca6df;
   --panel-line: rgba(255, 255, 255, 0.35);
   --panel-bg: rgba(255, 255, 255, 0.08);
   --panel-blur: blur(12px);
@@ -27,6 +27,30 @@ body,
   background: var(--blueprint);
 }
 
+#app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 32%),
+    radial-gradient(circle at 80% 40%, rgba(255, 255, 255, 0.06), transparent 40%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 42px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 42px
+    );
+}
+
 canvas {
   position: fixed;
   inset: 0;
@@ -43,9 +67,11 @@ canvas {
   border: 1px solid var(--border);
   border-radius: 12px;
   backdrop-filter: var(--panel-blur);
+  -webkit-backdrop-filter: var(--panel-blur);
   box-shadow: 0 10px 30px var(--shadow), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   overflow: hidden;
   user-select: none;
+  z-index: 10;
 }
 
 #ui-panel::before {
@@ -103,6 +129,7 @@ input[type="range"] {
   accent-color: var(--accent);
   cursor: pointer;
   background: transparent;
+  filter: drop-shadow(0 1px 1px rgba(8, 32, 64, 0.4));
 }
 
 .hint {
