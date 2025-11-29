@@ -182,6 +182,8 @@ const hitBlocks = [];
 const hitPlane = [];
 const tempIndex = { x: 0, y: 0, z: 0 };
 const tempNormal = new THREE.Vector3(0, 1, 0);
+const tempPoints = [];
+let distanceCircle;
 
 function indexKey(index) {
   return `${index.x}|${index.y}|${index.z}`;
@@ -211,6 +213,41 @@ function isWithinBuildDistance(index) {
 
 function getAnimDamping() {
   return Math.max(minAnimDamping, buildRate);
+}
+
+function createDistanceCircle() {
+  const segments = 128;
+  tempPoints.length = 0;
+  for (let i = 0; i <= segments; i++) {
+    const theta = (i / segments) * Math.PI * 2;
+    tempPoints.push(new THREE.Vector3(Math.cos(theta), 0, Math.sin(theta)));
+  }
+  const geometry = new THREE.BufferGeometry().setFromPoints(tempPoints);
+  const material = new THREE.LineBasicMaterial({
+    color: new THREE.Color('#ff9e00'),
+    transparent: true,
+    opacity: 0.65,
+    depthTest: true,
+    depthWrite: false
+  });
+  distanceCircle = new THREE.LineLoop(geometry, material);
+  distanceCircle.rotation.x = -Math.PI / 2;
+  distanceCircle.position.y = 0.001;
+  distanceCircle.renderOrder = 1;
+  scene.add(distanceCircle);
+}
+
+function updateDistanceCircle() {
+  if (!distanceCircle) return;
+  const radius = Math.max(0.001, buildDistance);
+  const positions = distanceCircle.geometry.attributes.position;
+  const count = positions.count;
+  for (let i = 0; i < count; i++) {
+    const t = (i / (count - 1)) * Math.PI * 2;
+    positions.setXYZ(i, Math.cos(t) * radius, Math.sin(t) * radius, 0);
+  }
+  positions.needsUpdate = true;
+  distanceCircle.geometry.computeBoundingSphere();
 }
 
 function scheduleColorLerp(mesh, targetColor) {
@@ -523,6 +560,7 @@ function setBuildDistance(value) {
   if (!pointerState.down) {
     updateHoverTarget();
   }
+  updateDistanceCircle();
 }
 distanceSlider.addEventListener('input', (event) => {
   setBuildDistance(parseFloat(event.target.value));
@@ -817,3 +855,5 @@ if (!Number.isNaN(initialHue) && !Number.isNaN(initialSat) && !Number.isNaN(init
 lastSavedColor = currentHex();
 renderRecentColors();
 addBlockAt({ x: 0, y: 0, z: 0 });
+createDistanceCircle();
+updateDistanceCircle();
