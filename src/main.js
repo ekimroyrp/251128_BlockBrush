@@ -144,11 +144,16 @@ const blocks = new Map();
 const blockGroup = new THREE.Group();
 scene.add(blockGroup);
 const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
-const blockMaterial = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
+const baseBlockMaterialParams = {
   roughness: 0.35,
   metalness: 0.05
-});
+};
+function makeBlockMaterial(color) {
+  return new THREE.MeshStandardMaterial({
+    color,
+    ...baseBlockMaterialParams
+  });
+}
 const previewMaterial = new THREE.MeshStandardMaterial({
   color: new THREE.Color('#7ce8ff'),
   roughness: 0.4,
@@ -169,6 +174,7 @@ let buildInterval = 1000 / buildRate;
 const lastActionTime = { add: -Infinity, remove: -Infinity };
 const minScaleValue = 0.0001;
 const minAnimDamping = 2;
+const currentColor = new THREE.Color('#ffffff');
 
 const hitBlocks = [];
 const hitPlane = [];
@@ -208,7 +214,8 @@ function getAnimDamping() {
 function addBlockAt(index) {
   const key = indexKey(index);
   if (blocks.has(key)) return;
-  const mesh = new THREE.Mesh(blockGeometry, blockMaterial);
+  const material = makeBlockMaterial(currentColor.clone());
+  const mesh = new THREE.Mesh(blockGeometry, material);
   mesh.scale.setScalar(minScaleValue);
   setPositionFromIndex(mesh.position, index);
   mesh.castShadow = false;
@@ -404,6 +411,8 @@ const distanceSlider = document.getElementById('build-distance');
 const distanceValue = document.getElementById('build-distance-value');
 const buildSlider = document.getElementById('build-speed');
 const buildValue = document.getElementById('build-speed-value');
+const colorInput = document.getElementById('block-color');
+const colorValue = document.getElementById('block-color-value');
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -442,6 +451,15 @@ function setBuildRate(value) {
   buildInterval = 1000 / buildRate;
   buildValue.textContent = `${Math.round(buildRate)}/s`;
 }
+function setBlockColor(hex) {
+  currentColor.set(hex);
+  const normalized = `#${currentColor.getHexString()}`;
+  colorValue.textContent = normalized;
+  if (colorInput) colorInput.value = normalized;
+}
+colorInput.addEventListener('input', (event) => {
+  setBlockColor(event.target.value);
+});
 buildSlider.addEventListener('input', (event) => {
   setBuildRate(parseFloat(event.target.value));
 });
@@ -528,4 +546,5 @@ setGridSize(parseFloat(gridSlider.value));
 setBlockGap(parseFloat(gapSlider.value));
 setBuildDistance(parseFloat(distanceSlider.value));
 setBuildRate(parseFloat(buildSlider.value));
+setBlockColor(colorInput.value);
 addBlockAt({ x: 0, y: 0, z: 0 });
