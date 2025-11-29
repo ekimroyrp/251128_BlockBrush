@@ -11,6 +11,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.domElement.style.touchAction = 'none';
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 container.appendChild(renderer.domElement);
 
 // Scene setup
@@ -83,11 +85,13 @@ window.addEventListener('keyup', (event) => {
 });
 
 // Lights
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0x6a7a8b, 1.0);
+const hemiLight = new THREE.HemisphereLight('#f2f7ff', '#1a2330', 0.9);
 scene.add(hemiLight);
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
+const dirLight = new THREE.DirectionalLight('#ffd8a8', 1.25);
 dirLight.position.set(6, 10, 4);
 scene.add(dirLight);
+const ambient = new THREE.AmbientLight(0xffffff, 0.12);
+scene.add(ambient);
 
 // Grid shader
 let gridSize = 1.0;
