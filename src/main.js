@@ -99,7 +99,7 @@ const gridMaterial = new THREE.ShaderMaterial({
     uColor: { value: new THREE.Color('#ffffff') },
     uFadeStart: { value: 30.0 },
     uFadeEnd: { value: 120.0 },
-    uLineThickness: { value: 0.075 }
+    uLineThickness: { value: 0.01 }
   },
   vertexShader: `
     varying vec3 vWorldPosition;
@@ -163,6 +163,7 @@ scene.add(previewMesh);
 
 let blockGap = 0.0;
 const minScaleRatio = 0.05; // prevent degenerate cubes
+let buildDistance = 60; // world-units radius from center (horizontal)
 let buildRate = 10; // blocks per second
 let buildInterval = 1000 / buildRate;
 const lastActionTime = { add: -Infinity, remove: -Infinity };
@@ -190,6 +191,12 @@ function getBlockScale() {
   const clampedGap = Math.min(blockGap, maxGap);
   const size = gridSize - clampedGap * 2;
   return Math.max(size, gridSize * minScaleRatio);
+}
+
+function isWithinBuildDistance(index) {
+  const dx = (index.x + 0.5) * gridSize;
+  const dz = (index.z + 0.5) * gridSize;
+  return Math.hypot(dx, dz) <= buildDistance;
 }
 
 function addBlockAt(index) {
@@ -302,7 +309,11 @@ function updateHoverTarget() {
     tempIndex.x = baseIndex.x + Math.round(tempNormal.x);
     tempIndex.y = baseIndex.y + Math.round(tempNormal.y);
     tempIndex.z = baseIndex.z + Math.round(tempNormal.z);
-    setPreview('add', { ...tempIndex }, null);
+    if (isWithinBuildDistance(tempIndex)) {
+      setPreview('add', { ...tempIndex }, null);
+    } else {
+      setPreview(null, null);
+    }
     hoverDirty = false;
     return;
   }
@@ -312,7 +323,11 @@ function updateHoverTarget() {
     tempIndex.x = Math.floor(point.x / gridSize);
     tempIndex.y = 0;
     tempIndex.z = Math.floor(point.z / gridSize);
-    setPreview('add', { ...tempIndex }, null);
+    if (isWithinBuildDistance(tempIndex)) {
+      setPreview('add', { ...tempIndex }, null);
+    } else {
+      setPreview(null, null);
+    }
     hoverDirty = false;
     return;
   }
@@ -325,7 +340,7 @@ function handlePaint() {
   if (!pointerState.down || uiActive) return;
   const now = performance.now();
   if (hoverState.type === 'add' && hoverState.index) {
-    if (now - lastActionTime.add >= buildInterval) {
+    if (isWithinBuildDistance(hoverState.index) && now - lastActionTime.add >= buildInterval) {
       addBlockAt(hoverState.index);
       lastActionTime.add = now;
     }
@@ -375,6 +390,8 @@ const gridSlider = document.getElementById('grid-size');
 const gridValue = document.getElementById('grid-size-value');
 const gapSlider = document.getElementById('block-gap');
 const gapValue = document.getElementById('block-gap-value');
+const distanceSlider = document.getElementById('build-distance');
+const distanceValue = document.getElementById('build-distance-value');
 const buildSlider = document.getElementById('build-speed');
 const buildValue = document.getElementById('build-speed-value');
 function setGridSize(value) {
@@ -398,6 +415,17 @@ function setBlockGap(value) {
 }
 gapSlider.addEventListener('input', (event) => {
   setBlockGap(parseFloat(event.target.value));
+});
+function setBuildDistance(value) {
+  buildDistance = Math.max(0, value);
+  distanceValue.textContent = `${Math.round(buildDistance)}`;
+  hoverDirty = true;
+  if (!pointerState.down) {
+    updateHoverTarget();
+  }
+}
+distanceSlider.addEventListener('input', (event) => {
+  setBuildDistance(parseFloat(event.target.value));
 });
 function setBuildRate(value) {
   buildRate = value;
@@ -462,5 +490,6 @@ renderer.setAnimationLoop(tick);
 // Initialize UI value and a starter block
 setGridSize(parseFloat(gridSlider.value));
 setBlockGap(parseFloat(gapSlider.value));
+setBuildDistance(parseFloat(distanceSlider.value));
 setBuildRate(parseFloat(buildSlider.value));
 addBlockAt({ x: 0, y: 0, z: 0 });
