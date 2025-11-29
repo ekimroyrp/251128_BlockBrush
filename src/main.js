@@ -171,7 +171,7 @@ const minScaleRatio = 0.05; // prevent degenerate cubes
 let buildDistance = 60; // world-units radius from center (horizontal)
 let buildRate = 10; // blocks per second
 let buildInterval = 1000 / buildRate;
-const lastActionTime = { add: -Infinity, remove: -Infinity };
+const lastActionTime = { add: -Infinity, remove: -Infinity, paint: -Infinity };
 const minScaleValue = 0.0001;
 const minAnimDamping = 2;
 const currentColor = new THREE.Color('#ffffff');
@@ -315,6 +315,20 @@ function updateHoverTarget() {
     return;
   }
 
+  if (pointerState.mode === 'paint') {
+    if (hitBlocks.length > 0) {
+      const hit = hitBlocks[0];
+      hoverState.type = 'paint';
+      hoverState.index = { ...hit.object.userData.index };
+      hoverState.key = hit.object.userData.key;
+      previewMesh.visible = false;
+    } else {
+      setPreview(null, null);
+    }
+    hoverDirty = false;
+    return;
+  }
+
   if (hitBlocks.length > 0) {
     const hit = hitBlocks[0];
     const baseIndex = hit.object.userData.index;
@@ -366,6 +380,14 @@ function handlePaint() {
       removeBlockAt(hoverState.key);
       lastActionTime.remove = now;
     }
+  } else if (hoverState.type === 'paint' && hoverState.key) {
+    if (now - lastActionTime.paint >= buildInterval) {
+      const mesh = blocks.get(hoverState.key);
+      if (mesh) {
+        mesh.material.color.copy(currentColor);
+      }
+      lastActionTime.paint = now;
+    }
   }
 }
 
@@ -375,7 +397,11 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
   if (uiActive) return;
   if (event.button === 0 || event.button === 2) {
     pointerState.down = true;
-    pointerState.mode = event.button === 0 ? 'add' : 'remove';
+    if (event.button === 0 && event.shiftKey) {
+      pointerState.mode = 'paint';
+    } else {
+      pointerState.mode = event.button === 0 ? 'add' : 'remove';
+    }
     lastActionTime[pointerState.mode] = -Infinity; // allow immediate first action
     renderer.domElement.setPointerCapture(event.pointerId);
     updatePointer(event);
