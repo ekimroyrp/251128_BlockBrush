@@ -493,6 +493,7 @@ const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
 let recentColors = swatches.map(() => '#ffffff');
+let lastSavedColor = '#ffffff';
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -627,7 +628,11 @@ function toggleColorPopover(forceState) {
     if (next) {
       syncColorControls();
     } else if (wasOpen) {
-      addRecentColor(currentHex());
+      const hex = currentHex();
+      if (hex !== lastSavedColor) {
+        addRecentColor(hex);
+        lastSavedColor = hex;
+      }
     }
   }
 }
@@ -809,5 +814,6 @@ if (!Number.isNaN(initialHue) && !Number.isNaN(initialSat) && !Number.isNaN(init
 } else {
   setBlockColor(initialHex);
 }
+lastSavedColor = currentHex();
 renderRecentColors();
 addBlockAt({ x: 0, y: 0, z: 0 });
