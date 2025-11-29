@@ -175,6 +175,8 @@ const lastActionTime = { add: -Infinity, remove: -Infinity, paint: -Infinity };
 const minScaleValue = 0.0001;
 const minAnimDamping = 2;
 const currentColor = new THREE.Color('#ffffff');
+const tempColorA = new THREE.Color();
+const tempColorB = new THREE.Color();
 
 const hitBlocks = [];
 const hitPlane = [];
@@ -209,6 +211,21 @@ function isWithinBuildDistance(index) {
 
 function getAnimDamping() {
   return Math.max(minAnimDamping, buildRate);
+}
+
+function scheduleColorLerp(mesh, targetColor) {
+  if (!mesh) return;
+  if (!mesh.userData.colorAnim) {
+    mesh.userData.colorAnim = {
+      from: mesh.material.color.clone(),
+      to: targetColor.clone(),
+      t: 0
+    };
+  } else {
+    mesh.userData.colorAnim.from.copy(mesh.material.color);
+    mesh.userData.colorAnim.to.copy(targetColor);
+    mesh.userData.colorAnim.t = 0;
+  }
 }
 
 function addBlockAt(index) {
@@ -406,7 +423,7 @@ function handlePaint() {
     if (now - lastActionTime.paint >= buildInterval) {
       const mesh = blocks.get(hoverState.key);
       if (mesh) {
-        mesh.material.color.copy(currentColor);
+        scheduleColorLerp(mesh, currentColor);
       }
       lastActionTime.paint = now;
     }
@@ -559,6 +576,7 @@ function updateAnimations(delta) {
   const damping = getAnimDamping(); // higher = snappier, tied to buildRate
   blockGroup.children.forEach((mesh) => {
     const anim = mesh.userData.anim;
+    const colorAnim = mesh.userData.colorAnim;
     const targetScale = anim
       ? anim.removing
         ? 0
@@ -572,6 +590,16 @@ function updateAnimations(delta) {
       blocks.delete(mesh.userData.key);
     } else if (anim && !anim.removing && Math.abs(next - targetScale) < 0.0005) {
       mesh.scale.setScalar(targetScale);
+    }
+
+    if (colorAnim) {
+      const lerpRate = Math.max(1.2, buildRate * 0.4); // slower, smoother
+      colorAnim.t = Math.min(1, colorAnim.t + delta * lerpRate);
+      mesh.material.color.lerpColors(colorAnim.from, colorAnim.to, colorAnim.t);
+      if (colorAnim.t >= 1 - 1e-4) {
+        mesh.material.color.copy(colorAnim.to);
+        delete mesh.userData.colorAnim;
+      }
     }
   });
 }
