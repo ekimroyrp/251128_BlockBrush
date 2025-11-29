@@ -478,6 +478,20 @@ const buildSlider = document.getElementById('build-speed');
 const buildValue = document.getElementById('build-speed-value');
 const colorInput = document.getElementById('block-color');
 const colorValue = document.getElementById('block-color-value');
+const colorChip = document.getElementById('block-color-chip');
+const colorPopover = document.getElementById('color-popover');
+const colorPreview = document.getElementById('color-preview');
+const colorHexInput = document.getElementById('color-hex-input');
+const hueSlider = document.getElementById('hue-slider');
+const satSlider = document.getElementById('sat-slider');
+const lightSlider = document.getElementById('light-slider');
+const hueValue = document.getElementById('hue-value');
+const satValue = document.getElementById('sat-value');
+const lightValue = document.getElementById('light-value');
+const swatches = Array.from(document.querySelectorAll('#color-swatches button'));
+const hslState = { h: 20 / 360, s: 1, l: 0.5 };
+let colorPopoverOpen = false;
+let lastHueInput = 0;
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -516,14 +530,150 @@ function setBuildRate(value) {
   buildInterval = 1000 / buildRate;
   buildValue.textContent = `${Math.round(buildRate)}/s`;
 }
-function setBlockColor(hex) {
-  currentColor.set(hex);
+const tempHSLColor = new THREE.Color();
+function updateSliderGradients() {
+  if (hueSlider) {
+    hueSlider.style.background =
+      'linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)';
+  }
+  if (satSlider) {
+    tempHSLColor.setHSL(hslState.h, 0, 0.5);
+    const start = `#${tempHSLColor.getHexString()}`;
+    tempHSLColor.setHSL(hslState.h, 1, 0.5);
+    const end = `#${tempHSLColor.getHexString()}`;
+    satSlider.style.background = `linear-gradient(90deg, ${start}, ${end})`;
+  }
+  if (lightSlider) {
+    const mid = `#${new THREE.Color()
+      .setHSL(hslState.h, Math.max(0.05, hslState.s), 0.5)
+      .getHexString()}`;
+    lightSlider.style.background = `linear-gradient(90deg, #000000, ${mid}, #ffffff)`;
+  }
+}
+function syncColorControls(forcedHsl) {
   const normalized = `#${currentColor.getHexString()}`;
   colorValue.textContent = normalized;
-  if (colorInput) colorInput.value = normalized;
+  if (colorInput && colorInput !== document.activeElement) colorInput.value = normalized;
+  if (colorHexInput && colorHexInput !== document.activeElement) colorHexInput.value = normalized;
+  if (colorChip) {
+    colorChip.style.setProperty('--chip-fill', normalized);
+    colorChip.style.background = normalized;
+  }
+  if (colorPreview) {
+    colorPreview.style.setProperty('--chip-fill', normalized);
+    colorPreview.style.background = normalized;
+  }
+  if (forcedHsl) {
+    hslState.h = forcedHsl.h;
+    hslState.s = forcedHsl.s;
+    hslState.l = forcedHsl.l;
+  } else {
+    currentColor.getHSL(hslState);
+  }
+  if (hueSlider && hueValue) {
+    const hueDisplay = Math.max(0, Math.min(360, Math.round(lastHueInput)));
+    hueSlider.value = hueDisplay;
+    hueValue.textContent = `${hueDisplay}`;
+  }
+  if (satSlider && satValue) {
+    satSlider.value = Math.round(hslState.s * 100);
+    satValue.textContent = `${satSlider.value}%`;
+  }
+  if (lightSlider && lightValue) {
+    lightSlider.value = Math.round(hslState.l * 100);
+    lightValue.textContent = `${lightSlider.value}%`;
+  }
+  updateSliderGradients();
+}
+function setBlockColor(hex, rawHueDeg) {
+  currentColor.set(hex);
+  currentColor.getHSL(hslState);
+  if (typeof rawHueDeg === 'number') {
+    lastHueInput = Math.max(0, Math.min(360, rawHueDeg));
+  } else {
+    lastHueInput = Math.max(0, Math.min(360, Math.round(hslState.h * 360)));
+  }
+  syncColorControls();
 }
 colorInput.addEventListener('input', (event) => {
   setBlockColor(event.target.value);
+});
+function toggleColorPopover(forceState) {
+  const next = typeof forceState === 'boolean' ? forceState : !colorPopoverOpen;
+  colorPopoverOpen = next;
+  if (colorPopover) {
+    colorPopover.classList.toggle('hidden', !next);
+    if (next) syncColorControls();
+  }
+}
+if (colorChip) {
+  colorChip.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleColorPopover();
+  });
+}
+if (hueSlider && satSlider && lightSlider) {
+  const onHslChange = () => {
+    let rawHue = parseFloat(hueSlider.value);
+    if (Number.isNaN(rawHue)) rawHue = lastHueInput || 0;
+    rawHue = Math.min(Math.max(rawHue, 0), 360);
+    lastHueInput = rawHue;
+    let h = rawHue >= 360 ? 1 : rawHue / 360;
+    let sRaw = Math.round(parseFloat(satSlider.value));
+    if (Number.isNaN(sRaw)) sRaw = Math.round(hslState.s * 100);
+    sRaw = Math.min(Math.max(sRaw, 0), 100);
+    satSlider.value = sRaw;
+    let s = sRaw / 100;
+
+    let l = parseFloat(lightSlider.value) / 100;
+    if (Number.isNaN(h)) h = hslState.h;
+    if (Number.isNaN(s)) s = hslState.s;
+    if (Number.isNaN(l)) l = hslState.l;
+    // allow full desaturation (0) and full light range
+    s = Math.max(0, s);
+    l = Math.min(1, Math.max(0, l));
+    const hslColor = tempHSLColor.setHSL(h, s, l);
+    currentColor.copy(hslColor);
+    syncColorControls({ h, s, l });
+  };
+  hueSlider.addEventListener('input', onHslChange);
+  satSlider.addEventListener('input', onHslChange);
+  lightSlider.addEventListener('input', onHslChange);
+}
+if (colorHexInput) {
+  colorHexInput.addEventListener('input', (event) => {
+    const val = event.target.value;
+    if (/^#?[0-9a-fA-F]{6}$/.test(val)) {
+      const normalized = val.startsWith('#') ? val : `#${val}`;
+      setBlockColor(normalized);
+    }
+  });
+}
+if (swatches.length > 0) {
+  swatches.forEach((btn) => {
+    const swatchColor = btn.getAttribute('data-color');
+    if (swatchColor) {
+      btn.style.background = swatchColor;
+    }
+    btn.addEventListener('click', () => {
+      const swatchColor = btn.getAttribute('data-color');
+      if (swatchColor) setBlockColor(swatchColor);
+    });
+  });
+}
+window.addEventListener('click', (event) => {
+  if (!colorPopoverOpen) return;
+  if (
+    colorPopover &&
+    !colorPopover.contains(event.target) &&
+    colorChip &&
+    !colorChip.contains(event.target)
+  ) {
+    toggleColorPopover(false);
+  }
+});
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && colorPopoverOpen) toggleColorPopover(false);
 });
 buildSlider.addEventListener('input', (event) => {
   setBuildRate(parseFloat(event.target.value));
@@ -622,5 +772,20 @@ setGridSize(parseFloat(gridSlider.value));
 setBlockGap(parseFloat(gapSlider.value));
 setBuildDistance(parseFloat(distanceSlider.value));
 setBuildRate(parseFloat(buildSlider.value));
-setBlockColor(colorInput.value);
+// Initialize color from HSL defaults or input value
+const initialHex =
+  colorInput && colorInput.value ? colorInput.value : '#ffffff';
+const initialHue = hueSlider ? parseFloat(hueSlider.value) : 20;
+const initialSat = satSlider ? parseFloat(satSlider.value) : 100;
+const initialLight = lightSlider ? parseFloat(lightSlider.value) : 50;
+if (!Number.isNaN(initialHue) && !Number.isNaN(initialSat) && !Number.isNaN(initialLight)) {
+  const col = new THREE.Color().setHSL(
+    Math.min(Math.max(initialHue, 0), 360) / 360,
+    Math.min(Math.max(initialSat, 0), 100) / 100,
+    Math.min(Math.max(initialLight, 0), 100) / 100
+  );
+  setBlockColor(`#${col.getHexString()}`, initialHue);
+} else {
+  setBlockColor(initialHex);
+}
 addBlockAt({ x: 0, y: 0, z: 0 });

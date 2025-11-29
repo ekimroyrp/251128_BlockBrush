@@ -42,9 +42,47 @@
         <label class="control">
           <div class="control-row">
             <span>Block Color</span>
-            <span id="block-color-value">#ffffff</span>
+            <span id="block-color-value" class="color-hex">#ffffff</span>
           </div>
-          <input type="color" id="block-color" value="#ffffff">
+          <div class="color-picker-row">
+            <button type="button" id="block-color-chip" aria-label="Pick block color"></button>
+            <input type="color" id="block-color" value="#ffffff">
+          </div>
+          <div id="color-popover" class="color-popover hidden">
+            <div class="color-popover-header">
+              <div class="color-preview" id="color-preview"></div>
+              <input type="text" id="color-hex-input" maxlength="7" aria-label="Hex color" />
+            </div>
+            <div class="color-slider">
+              <div class="control-row">
+                <span>Hue</span>
+            <span id="hue-value">20</span>
+          </div>
+          <input type="range" id="hue-slider" min="0" max="360" step="1" value="20">
+        </div>
+        <div class="color-slider">
+          <div class="control-row">
+            <span>Sat</span>
+            <span id="sat-value">100%</span>
+          </div>
+          <input type="range" id="sat-slider" min="0" max="100" step="1" value="100">
+        </div>
+        <div class="color-slider">
+          <div class="control-row">
+            <span>Light</span>
+            <span id="light-value">50%</span>
+          </div>
+          <input type="range" id="light-slider" min="0" max="100" step="1" value="50">
+        </div>
+            <div class="swatches" id="color-swatches">
+              <button type="button" data-color="#ffffff" aria-label="White"></button>
+              <button type="button" data-color="#4cc9f0" aria-label="Cyan"></button>
+              <button type="button" data-color="#4361ee" aria-label="Blue"></button>
+              <button type="button" data-color="#ff9e00" aria-label="Amber"></button>
+              <button type="button" data-color="#ff4d6d" aria-label="Red"></button>
+              <button type="button" data-color="#3ccf4e" aria-label="Green"></button>
+            </div>
+          </div>
         </label>
       </div>
       <div id="ui-handle-bottom"></div>
