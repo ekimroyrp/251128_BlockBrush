@@ -530,7 +530,7 @@ distanceSlider.addEventListener('input', (event) => {
 function setBuildRate(value) {
   buildRate = value;
   buildInterval = 1000 / buildRate;
-  buildValue.textContent = `${Math.round(buildRate)}/s`;
+  buildValue.textContent = `${Math.round(buildRate)}`;
 }
 const tempHSLColor = new THREE.Color();
 function updateSliderGradients() {
@@ -769,7 +769,7 @@ function updateAnimations(delta) {
     }
 
     if (colorAnim) {
-      const lerpRate = Math.max(1.2, buildRate * 0.4); // slower, smoother
+      const lerpRate = Math.max(1.2, buildRate * 0.6); // faster paint transition
       colorAnim.t = Math.min(1, colorAnim.t + delta * lerpRate);
       mesh.material.color.lerpColors(colorAnim.from, colorAnim.to, colorAnim.t);
       if (colorAnim.t >= 1 - 1e-4) {
