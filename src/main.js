@@ -168,6 +168,7 @@ let buildRate = 10; // blocks per second
 let buildInterval = 1000 / buildRate;
 const lastActionTime = { add: -Infinity, remove: -Infinity };
 const minScaleValue = 0.0001;
+const minAnimDamping = 2;
 
 const hitBlocks = [];
 const hitPlane = [];
@@ -198,6 +199,10 @@ function isWithinBuildDistance(index) {
   const dx = (index.x + 0.5) * gridSize;
   const dz = (index.z + 0.5) * gridSize;
   return Math.hypot(dx, dz) <= buildDistance;
+}
+
+function getAnimDamping() {
+  return Math.max(minAnimDamping, buildRate);
 }
 
 function addBlockAt(index) {
@@ -485,7 +490,7 @@ window.addEventListener('resize', () => {
 // Animation loop
 let lastTime = performance.now();
 function updateAnimations(delta) {
-  const damping = 10; // higher = snappier
+  const damping = getAnimDamping(); // higher = snappier, tied to buildRate
   blockGroup.children.forEach((mesh) => {
     const anim = mesh.userData.anim;
     const targetScale = anim
