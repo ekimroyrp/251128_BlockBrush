@@ -23,7 +23,7 @@
             <span>Block Gap</span>
             <span id="block-gap-value">0.00</span>
           </div>
-          <input type="range" id="block-gap" min="0" max="0.45" step="0.01" value="0">
+          <input type="range" id="block-gap" min="0" max="0.45" step="0.01" value="0.01">
         </label>
         <label class="control">
           <div class="control-row">
@@ -38,6 +38,15 @@
             <span id="build-speed-value">10</span>
           </div>
           <input type="range" id="build-speed" min="1" max="100" step="1" value="10">
+        </label>
+        <label class="control">
+          <div class="control-row">
+            <span>Show Wireframe</span>
+            <label class="switch">
+              <input type="checkbox" id="wireframe-toggle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
         </label>
         <label class="control">
           <div class="control-row">
@@ -82,10 +91,6 @@
               <button type="button" data-color="#ff4d6d" aria-label="Red"></button>
               <button type="button" data-color="#3ccf4e" aria-label="Green"></button>
             </div>
-          </div>
-          <div class="control-row toggle-row">
-            <span>Show Wireframe</span>
-            <input type="checkbox" id="wireframe-toggle" />
           </div>
         </label>
       </div>

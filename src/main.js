@@ -581,7 +581,7 @@ let colorPopoverOpen = false;
 let lastHueInput = 0;
 let recentColors = swatches.map(() => '#ffffff');
 let lastSavedColor = '#ffffff';
-let wireframeVisible = false;
+let wireframeVisible = Boolean(wireframeToggle && wireframeToggle.checked);
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -901,7 +901,7 @@ renderer.setAnimationLoop(tick);
 
 // Initialize UI value and a starter block
 setGridSize(parseFloat(gridSlider.value));
-setBlockGap(parseFloat(gapSlider.value));
+setBlockGap(parseFloat(gapSlider.value) || 0.01);
 setBuildDistance(parseFloat(distanceSlider.value));
 setBuildRate(parseFloat(buildSlider.value));
 // Initialize color from HSL defaults or input value
