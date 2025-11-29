@@ -161,6 +161,8 @@ const previewMesh = new THREE.Mesh(blockGeometry, previewMaterial);
 previewMesh.visible = false;
 scene.add(previewMesh);
 
+let blockGap = 0.0;
+const minScaleRatio = 0.05; // prevent degenerate cubes
 let buildRate = 10; // blocks per second
 let buildInterval = 1000 / buildRate;
 const lastActionTime = { add: -Infinity, remove: -Infinity };
@@ -183,11 +185,18 @@ function setPositionFromIndex(target, index) {
   return target;
 }
 
+function getBlockScale() {
+  const maxGap = gridSize * 0.49;
+  const clampedGap = Math.min(blockGap, maxGap);
+  const size = gridSize - clampedGap * 2;
+  return Math.max(size, gridSize * minScaleRatio);
+}
+
 function addBlockAt(index) {
   const key = indexKey(index);
   if (blocks.has(key)) return;
   const mesh = new THREE.Mesh(blockGeometry, blockMaterial);
-  mesh.scale.setScalar(gridSize);
+  mesh.scale.setScalar(getBlockScale());
   setPositionFromIndex(mesh.position, index);
   mesh.castShadow = false;
   mesh.receiveShadow = true;
@@ -207,11 +216,11 @@ function removeBlockAt(key) {
 function resnapBlocks() {
   blocks.forEach((mesh) => {
     const idx = mesh.userData.index;
-    mesh.scale.setScalar(gridSize);
+    mesh.scale.setScalar(getBlockScale());
     setPositionFromIndex(mesh.position, idx);
   });
   if (previewMesh.visible && hoverState.index) {
-    previewMesh.scale.setScalar(gridSize);
+    previewMesh.scale.setScalar(getBlockScale());
     setPositionFromIndex(previewMesh.position, hoverState.index);
   }
 }
@@ -253,7 +262,7 @@ function setPreview(type, targetIndex, targetKey) {
   hoverState.index = targetIndex;
   hoverState.key = targetKey || null;
   previewMesh.visible = true;
-  previewMesh.scale.setScalar(gridSize);
+  previewMesh.scale.setScalar(getBlockScale());
   setPositionFromIndex(previewMesh.position, targetIndex);
   previewMaterial.color.set(type === 'remove' ? '#ff7f7f' : '#7ce8ff');
 }
@@ -364,16 +373,31 @@ renderer.domElement.addEventListener('pointerleave', () => {
 // UI slider
 const gridSlider = document.getElementById('grid-size');
 const gridValue = document.getElementById('grid-size-value');
+const gapSlider = document.getElementById('block-gap');
+const gapValue = document.getElementById('block-gap-value');
 const buildSlider = document.getElementById('build-speed');
 const buildValue = document.getElementById('build-speed-value');
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
   gridValue.textContent = gridSize.toFixed(1);
+  setBlockGap(blockGap); // re-clamp to new grid size and resnap
   resnapBlocks();
 }
 gridSlider.addEventListener('input', (event) => {
   setGridSize(parseFloat(event.target.value));
+});
+function setBlockGap(value) {
+  const maxGap = gridSize * 0.49;
+  blockGap = Math.max(0, Math.min(value, maxGap));
+  gapValue.textContent = blockGap.toFixed(2);
+  if (gapSlider) {
+    gapSlider.value = blockGap.toFixed(2);
+  }
+  resnapBlocks();
+}
+gapSlider.addEventListener('input', (event) => {
+  setBlockGap(parseFloat(event.target.value));
 });
 function setBuildRate(value) {
   buildRate = value;
@@ -437,5 +461,6 @@ renderer.setAnimationLoop(tick);
 
 // Initialize UI value and a starter block
 setGridSize(parseFloat(gridSlider.value));
+setBlockGap(parseFloat(gapSlider.value));
 setBuildRate(parseFloat(buildSlider.value));
 addBlockAt({ x: 0, y: 0, z: 0 });

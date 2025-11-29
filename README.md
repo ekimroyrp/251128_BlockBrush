@@ -4,10 +4,12 @@ BlockBrush is a blueprint-styled Three.js prototype for painting and erasing vox
 
 ## Features
 - Infinite blueprint grid with distance fade and crisp white lines
-- Draggable, blurred blueprint UI panel with grid-size slider (affects grid and cube snap)
+- Draggable, blurred blueprint UI panel with block size slider (affects grid and cube snap)
+- Block gap slider to create space between cubes
 - Hover ghost preview for placement and deletion targets
 - Block painting (LMB drag) and erasing (RMB drag) snapped to grid, stacking on hit faces
 - Orbit (MMB), pan (Shift+MMB), and scroll zoom camera controls
+- Build speed slider to throttle add/remove while dragging
 
 ## Getting Started
 1. Clone the repository: `git clone https://github.com/ekimroyrp/251128_BlockBrush.git`
