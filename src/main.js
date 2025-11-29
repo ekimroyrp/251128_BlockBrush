@@ -13,6 +13,8 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.domElement.style.touchAction = 'none';
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 // Scene setup
@@ -88,13 +90,37 @@ window.addEventListener('keyup', (event) => {
 const hemiLight = new THREE.HemisphereLight('#f2f7ff', '#1a2330', 0.9);
 scene.add(hemiLight);
 const dirLight = new THREE.DirectionalLight('#ffd8a8', 1.25);
-dirLight.position.set(6, 10, 4);
+dirLight.position.set(6, 12, 6);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(2048, 2048);
+dirLight.shadow.camera.near = 1;
+dirLight.shadow.camera.far = 80;
+dirLight.shadow.camera.left = -40;
+dirLight.shadow.camera.right = 40;
+dirLight.shadow.camera.top = 40;
+dirLight.shadow.camera.bottom = -40;
+dirLight.shadow.bias = -0.0005;
 scene.add(dirLight);
 const backLight = new THREE.DirectionalLight('#a5c7ff', 0.45);
 backLight.position.set(-8, 6, -10);
+backLight.castShadow = true;
+backLight.shadow.mapSize.set(1024, 1024);
+backLight.shadow.camera.near = 1;
+backLight.shadow.camera.far = 60;
+backLight.shadow.bias = -0.0005;
 scene.add(backLight);
 const ambient = new THREE.AmbientLight(0xffffff, 0.12);
 scene.add(ambient);
+
+// Shadow receiver plane
+const shadowPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(4000, 4000),
+  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.2 })
+);
+shadowPlane.rotation.x = -Math.PI / 2;
+shadowPlane.position.y = 0.0001;
+shadowPlane.receiveShadow = true;
+scene.add(shadowPlane);
 
 // Grid shader
 let gridSize = 1.0;
@@ -143,7 +169,7 @@ const gridMesh = new THREE.Mesh(
   gridMaterial
 );
 gridMesh.rotation.x = -Math.PI / 2;
-gridMesh.position.y = 0;
+gridMesh.position.y = 0.0002;
 scene.add(gridMesh);
 
 // Blocks
@@ -279,7 +305,7 @@ function addBlockAt(index) {
   const mesh = new THREE.Mesh(blockGeometry, material);
   mesh.scale.setScalar(minScaleValue);
   setPositionFromIndex(mesh.position, index);
-  mesh.castShadow = false;
+  mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.userData.index = { ...index };
   mesh.userData.key = key;
