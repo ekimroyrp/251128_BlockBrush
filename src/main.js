@@ -167,6 +167,7 @@ let buildDistance = 60; // world-units radius from center (horizontal)
 let buildRate = 10; // blocks per second
 let buildInterval = 1000 / buildRate;
 const lastActionTime = { add: -Infinity, remove: -Infinity };
+const minScaleValue = 0.0001;
 
 const hitBlocks = [];
 const hitPlane = [];
@@ -203,12 +204,13 @@ function addBlockAt(index) {
   const key = indexKey(index);
   if (blocks.has(key)) return;
   const mesh = new THREE.Mesh(blockGeometry, blockMaterial);
-  mesh.scale.setScalar(getBlockScale());
+  mesh.scale.setScalar(minScaleValue);
   setPositionFromIndex(mesh.position, index);
   mesh.castShadow = false;
   mesh.receiveShadow = true;
   mesh.userData.index = { ...index };
   mesh.userData.key = key;
+  mesh.userData.anim = { removing: false, desiredScale: getBlockScale() };
   blocks.set(key, mesh);
   blockGroup.add(mesh);
 }
@@ -216,14 +218,17 @@ function addBlockAt(index) {
 function removeBlockAt(key) {
   const mesh = blocks.get(key);
   if (!mesh) return;
-  blockGroup.remove(mesh);
-  blocks.delete(key);
+  const anim = mesh.userData.anim || {};
+  anim.removing = true;
+  mesh.userData.anim = anim;
 }
 
 function resnapBlocks() {
   blocks.forEach((mesh) => {
     const idx = mesh.userData.index;
-    mesh.scale.setScalar(getBlockScale());
+    const anim = mesh.userData.anim || {};
+    anim.desiredScale = getBlockScale();
+    mesh.userData.anim = anim;
     setPositionFromIndex(mesh.position, idx);
   });
   if (previewMesh.visible && hoverState.index) {
@@ -478,7 +483,33 @@ window.addEventListener('resize', () => {
 });
 
 // Animation loop
+let lastTime = performance.now();
+function updateAnimations(delta) {
+  const damping = 10; // higher = snappier
+  blockGroup.children.forEach((mesh) => {
+    const anim = mesh.userData.anim;
+    const targetScale = anim
+      ? anim.removing
+        ? 0
+        : anim.desiredScale ?? getBlockScale()
+      : getBlockScale();
+    const next = THREE.MathUtils.damp(mesh.scale.x, targetScale, damping, delta);
+    mesh.scale.setScalar(Math.max(next, minScaleValue));
+
+    if (anim?.removing && next <= 0.02) {
+      blockGroup.remove(mesh);
+      blocks.delete(mesh.userData.key);
+    } else if (anim && !anim.removing && Math.abs(next - targetScale) < 0.0005) {
+      mesh.scale.setScalar(targetScale);
+    }
+  });
+}
+
 function tick() {
+  const now = performance.now();
+  const delta = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  updateAnimations(delta);
   if (hoverDirty && !pointerState.down) {
     updateHoverTarget();
   }
