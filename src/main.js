@@ -90,6 +90,9 @@ scene.add(hemiLight);
 const dirLight = new THREE.DirectionalLight('#ffd8a8', 1.25);
 dirLight.position.set(6, 10, 4);
 scene.add(dirLight);
+const backLight = new THREE.DirectionalLight('#a5c7ff', 0.45);
+backLight.position.set(-8, 6, -10);
+scene.add(backLight);
 const ambient = new THREE.AmbientLight(0xffffff, 0.12);
 scene.add(ambient);
 
