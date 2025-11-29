@@ -172,9 +172,9 @@ function indexKey(index) {
 
 function setPositionFromIndex(target, index) {
   target.set(
-    index.x * gridSize,
-    index.y * gridSize + gridSize * 0.5,
-    index.z * gridSize
+    (index.x + 0.5) * gridSize,
+    (index.y + 0.5) * gridSize,
+    (index.z + 0.5) * gridSize
   );
   return target;
 }
@@ -296,9 +296,9 @@ function updateHoverTarget() {
 
   if (hitPlane.length > 0) {
     const point = hitPlane[0].point;
-    tempIndex.x = Math.round(point.x / gridSize);
+    tempIndex.x = Math.floor(point.x / gridSize);
     tempIndex.y = 0;
-    tempIndex.z = Math.round(point.z / gridSize);
+    tempIndex.z = Math.floor(point.z / gridSize);
     setPreview('add', { ...tempIndex }, null);
     hoverDirty = false;
     return;
