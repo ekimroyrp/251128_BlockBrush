@@ -177,6 +177,13 @@ const blocks = new Map();
 const blockGroup = new THREE.Group();
 scene.add(blockGroup);
 const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+const blockEdgesGeometry = new THREE.EdgesGeometry(blockGeometry);
+const wireframeMaterial = new THREE.LineBasicMaterial({
+  color: '#2b2b2b',
+  transparent: true,
+  opacity: 0.35,
+  depthWrite: false
+});
 const baseBlockMaterialParams = {
   roughness: 0.35,
   metalness: 0.05
@@ -303,6 +310,10 @@ function addBlockAt(index) {
   if (blocks.has(key)) return;
   const material = makeBlockMaterial(currentColor.clone());
   const mesh = new THREE.Mesh(blockGeometry, material);
+  const wire = new THREE.LineSegments(blockEdgesGeometry, wireframeMaterial);
+  wire.name = 'wireframe';
+  wire.visible = wireframeVisible;
+  mesh.add(wire);
   mesh.scale.setScalar(minScaleValue);
   setPositionFromIndex(mesh.position, index);
   mesh.castShadow = true;
@@ -329,6 +340,11 @@ function resnapBlocks() {
     anim.desiredScale = getBlockScale();
     mesh.userData.anim = anim;
     setPositionFromIndex(mesh.position, idx);
+    const wire = mesh.getObjectByName('wireframe');
+    if (wire) {
+      wire.visible = wireframeVisible;
+      wire.material.opacity = wireframeVisible ? 0.35 : 0;
+    }
   });
   if (previewMesh.visible && hoverState.index) {
     previewMesh.scale.setScalar(getBlockScale());
@@ -559,11 +575,13 @@ const hueValue = document.getElementById('hue-value');
 const satValue = document.getElementById('sat-value');
 const lightValue = document.getElementById('light-value');
 const swatches = Array.from(document.querySelectorAll('#color-swatches button'));
+const wireframeToggle = document.getElementById('wireframe-toggle');
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
 let recentColors = swatches.map(() => '#ffffff');
 let lastSavedColor = '#ffffff';
+let wireframeVisible = false;
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -689,6 +707,23 @@ function setBlockColor(hex, rawHueDeg) {
 colorInput.addEventListener('input', (event) => {
   setBlockColor(event.target.value);
 });
+
+function setWireframeVisible(on) {
+  wireframeVisible = on;
+  blocks.forEach((mesh) => {
+    const wire = mesh.getObjectByName('wireframe');
+    if (wire) {
+      wire.visible = wireframeVisible;
+      wire.material.opacity = wireframeVisible ? 0.35 : 0;
+    }
+  });
+}
+if (wireframeToggle) {
+  wireframeToggle.addEventListener('change', (e) => {
+    setWireframeVisible(Boolean(e.target.checked));
+  });
+}
+
 function toggleColorPopover(forceState) {
   const next = typeof forceState === 'boolean' ? forceState : !colorPopoverOpen;
   const wasOpen = colorPopoverOpen;
@@ -887,6 +922,7 @@ if (!Number.isNaN(initialHue) && !Number.isNaN(initialSat) && !Number.isNaN(init
 }
 lastSavedColor = currentHex();
 renderRecentColors();
+setWireframeVisible(Boolean(wireframeToggle && wireframeToggle.checked));
 addBlockAt({ x: 0, y: 0, z: 0 });
 createDistanceCircle();
 updateDistanceCircle();
