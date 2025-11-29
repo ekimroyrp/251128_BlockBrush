@@ -255,6 +255,7 @@ const raycaster = new THREE.Raycaster();
 const pointerState = { down: false, mode: null };
 const hoverState = { type: null, index: null, key: null };
 let hoverDirty = true;
+let isShiftDown = false;
 
 let uiActive = false;
 const uiPanel = document.getElementById('ui-panel');
@@ -266,6 +267,19 @@ uiPanel.addEventListener('pointerup', () => {
 });
 uiPanel.addEventListener('pointerleave', () => {
   uiActive = false;
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Shift' && !isShiftDown) {
+    isShiftDown = true;
+    setPreview(null, null);
+  }
+});
+window.addEventListener('keyup', (event) => {
+  if (event.key === 'Shift') {
+    isShiftDown = false;
+    hoverDirty = true;
+  }
 });
 
 function updatePointer(event) {
@@ -293,6 +307,12 @@ function setPreview(type, targetIndex, targetKey) {
 
 function updateHoverTarget() {
   if (uiActive) {
+    setPreview(null, null);
+    hoverDirty = false;
+    return;
+  }
+
+  if (isShiftDown && pointerState.mode !== 'remove' && pointerState.mode !== 'paint') {
     setPreview(null, null);
     hoverDirty = false;
     return;
@@ -340,7 +360,9 @@ function updateHoverTarget() {
     tempIndex.x = baseIndex.x + Math.round(tempNormal.x);
     tempIndex.y = baseIndex.y + Math.round(tempNormal.y);
     tempIndex.z = baseIndex.z + Math.round(tempNormal.z);
-    if (isWithinBuildDistance(tempIndex)) {
+    if (pointerState.mode === 'paint') {
+      setPreview(null, null);
+    } else if (isWithinBuildDistance(tempIndex)) {
       setPreview('add', { ...tempIndex }, null);
     } else {
       setPreview(null, null);
