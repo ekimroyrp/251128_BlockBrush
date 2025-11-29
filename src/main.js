@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import './style.css';
 
 const container = document.getElementById('app');
-const blueprintColor = new THREE.Color('#6ca6df');
+const blueprintColor = new THREE.Color('#0c2b4f');
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
