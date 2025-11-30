@@ -90,16 +90,11 @@ window.addEventListener('keyup', (event) => {
 const hemiLight = new THREE.HemisphereLight('#f2f7ff', '#1a2330', 0.9);
 scene.add(hemiLight);
 const dirLight = new THREE.DirectionalLight('#ffd8a8', 1.25);
-dirLight.position.set(6, 12, 6);
+dirLight.position.set(72, 140, 72);
 dirLight.castShadow = true;
-dirLight.shadow.mapSize.set(2048, 2048);
-dirLight.shadow.camera.near = 1;
-dirLight.shadow.camera.far = 80;
-dirLight.shadow.camera.left = -40;
-dirLight.shadow.camera.right = 40;
-dirLight.shadow.camera.top = 40;
-dirLight.shadow.camera.bottom = -40;
+dirLight.shadow.mapSize.set(4096, 4096);
 dirLight.shadow.bias = -0.0005;
+dirLight.shadow.normalBias = 0.0025;
 scene.add(dirLight);
 const backLight = new THREE.DirectionalLight('#a5c7ff', 0.45);
 backLight.position.set(-8, 6, -10);
@@ -211,6 +206,18 @@ const minScaleRatio = 0.05; // prevent degenerate cubes
 let buildDistance = 60; // world-units radius from center (horizontal)
 let buildRate = 10; // blocks per second
 let buildInterval = 1000 / buildRate;
+function updateSunShadowFrustum() {
+  const cam = dirLight.shadow.camera;
+  const extent = Math.max(120, buildDistance * 1.35);
+  cam.left = -extent;
+  cam.right = extent;
+  cam.top = extent;
+  cam.bottom = -extent;
+  cam.near = 0.5;
+  const lightDistance = dirLight.position.length();
+  cam.far = Math.max(lightDistance + extent, extent * 2.5);
+  cam.updateProjectionMatrix();
+}
 const lastActionTime = { add: -Infinity, remove: -Infinity, paint: -Infinity };
 const minScaleValue = 0.0001;
 const minAnimDamping = 2;
@@ -633,6 +640,7 @@ function setBuildDistance(value) {
   }
   updateRangeFill(distanceSlider);
   updateDistanceCircle();
+  updateSunShadowFrustum();
 }
 distanceSlider.addEventListener('input', (event) => {
   setBuildDistance(parseFloat(event.target.value));
