@@ -294,6 +294,72 @@ function finalizeStrokeHistory() {
   strokeActive = false;
   actionDirty = false;
 }
+function resetBlocks() {
+  if (!blocks.size) return;
+  strokeActive = true;
+  actionDirty = true;
+  resetPending = true;
+  blocks.forEach((mesh) => {
+    const anim = mesh.userData.anim || {};
+    anim.removing = true;
+    mesh.userData.anim = anim;
+  });
+}
+function exportBlocksToOBJ() {
+  const basePos = blockGeometry.attributes.position?.array;
+  const baseNorm = blockGeometry.attributes.normal?.array;
+  const baseIndex = blockGeometry.index ? blockGeometry.index.array : null;
+  if (!basePos || !baseNorm) return;
+  const lines = ['# BlockBrush export'];
+  let vertexOffset = 0;
+  blocks.forEach((mesh) => {
+    tempMatrix.compose(mesh.position, mesh.quaternion, mesh.scale);
+    tempNormalMatrix.getNormalMatrix(tempMatrix);
+    const { r, g, b } = mesh.material.color;
+    for (let i = 0; i < basePos.length; i += 3) {
+      tempVec3.set(basePos[i], basePos[i + 1], basePos[i + 2]).applyMatrix4(tempMatrix);
+      lines.push(
+        `v ${tempVec3.x.toFixed(5)} ${tempVec3.y.toFixed(5)} ${tempVec3.z.toFixed(5)} ${r.toFixed(
+          6
+        )} ${g.toFixed(6)} ${b.toFixed(6)}`
+      );
+    }
+    for (let i = 0; i < baseNorm.length; i += 3) {
+      tempVec3
+        .set(baseNorm[i], baseNorm[i + 1], baseNorm[i + 2])
+        .applyMatrix3(tempNormalMatrix)
+        .normalize();
+      lines.push(`vn ${tempVec3.x.toFixed(5)} ${tempVec3.y.toFixed(5)} ${tempVec3.z.toFixed(5)}`);
+    }
+    const vertCount = basePos.length / 3;
+    if (baseIndex) {
+      for (let i = 0; i < baseIndex.length; i += 3) {
+        const a = vertexOffset + baseIndex[i] + 1;
+        const bIdx = vertexOffset + baseIndex[i + 1] + 1;
+        const c = vertexOffset + baseIndex[i + 2] + 1;
+        lines.push(`f ${a}//${a} ${bIdx}//${bIdx} ${c}//${c}`);
+      }
+    } else {
+      for (let i = 0; i < vertCount; i += 3) {
+        const a = vertexOffset + i + 1;
+        const bIdx = vertexOffset + i + 2;
+        const c = vertexOffset + i + 3;
+        lines.push(`f ${a}//${a} ${bIdx}//${bIdx} ${c}//${c}`);
+      }
+    }
+    vertexOffset += vertCount;
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  link.download = `blockbrush-${stamp}.obj`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 const lastActionTime = { add: -Infinity, remove: -Infinity, paint: -Infinity };
 const minScaleValue = 0.0001;
 const minAnimDamping = 2;
@@ -307,6 +373,10 @@ const tempIndex = { x: 0, y: 0, z: 0 };
 const tempNormal = new THREE.Vector3(0, 1, 0);
 const tempPoints = [];
 let distanceCircle;
+let resetPending = false;
+const tempMatrix = new THREE.Matrix4();
+const tempNormalMatrix = new THREE.Matrix3();
+const tempVec3 = new THREE.Vector3();
 
 function indexKey(index) {
   return `${index.x}|${index.y}|${index.z}`;
@@ -671,6 +741,8 @@ const gridToggle = document.getElementById('grid-toggle');
 const distanceToggle = document.getElementById('distance-toggle');
 const undoButton = document.getElementById('undo-button');
 const redoButton = document.getElementById('redo-button');
+const resetButton = document.getElementById('reset-button');
+const exportButton = document.getElementById('export-button');
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
@@ -873,6 +945,18 @@ if (redoButton) {
     redoLast();
   });
 }
+if (resetButton) {
+  resetButton.addEventListener('click', () => {
+    finalizeStrokeHistory();
+    resetBlocks();
+  });
+}
+if (exportButton) {
+  exportButton.addEventListener('click', () => {
+    finalizeStrokeHistory();
+    exportBlocksToOBJ();
+  });
+}
 function setDistanceVisible(on) {
   distanceVisible = on;
   if (distanceCircle) {
@@ -1045,6 +1129,13 @@ function updateAnimations(delta) {
       }
     }
   });
+  if (resetPending && blockGroup.children.length === 0) {
+    pushHistoryState(snapshotState(), true);
+    strokeActive = false;
+    actionDirty = false;
+    resetPending = false;
+    updateHistoryButtons();
+  }
 }
 
 function tick() {
