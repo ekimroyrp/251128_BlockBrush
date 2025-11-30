@@ -90,7 +90,7 @@ window.addEventListener('keyup', (event) => {
 const hemiLight = new THREE.HemisphereLight('#cfe8ff', '#0f1f33', 1.2);
 scene.add(hemiLight);
 const dirLight = new THREE.DirectionalLight('#ffc78a', 1.8);
-dirLight.position.set(39, 140, 94); // ~22.5° azimuth relative to +Z
+dirLight.position.set(39, 140, 94); // ~22.5 deg azimuth relative to +Z
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(4096, 4096);
 dirLight.shadow.bias = -0.0005;
@@ -198,6 +198,11 @@ const minScaleRatio = 0.05; // prevent degenerate cubes
 let buildDistance = 60; // world-units radius from center (horizontal)
 let buildRate = 10; // blocks per second
 let buildInterval = 1000 / buildRate;
+const historyLimit = 50;
+const history = [];
+const redoStack = [];
+let strokeActive = false;
+let actionDirty = false;
 function updateSunShadowFrustum() {
   const cam = dirLight.shadow.camera;
   const extent = Math.max(120, buildDistance * 1.35);
@@ -209,6 +214,85 @@ function updateSunShadowFrustum() {
   const lightDistance = dirLight.position.length();
   cam.far = Math.max(lightDistance + extent, extent * 2.5);
   cam.updateProjectionMatrix();
+}
+function markHistoryChange() {
+  if (strokeActive) actionDirty = true;
+}
+function snapshotState() {
+  const entries = [];
+  blocks.forEach((mesh) => {
+    if (mesh.userData?.anim?.removing) return;
+    entries.push({
+      index: { ...mesh.userData.index },
+      color: mesh.material.color.getHex()
+    });
+  });
+  return { blocks: entries };
+}
+function restoreState(state) {
+  blockGroup.children.slice().forEach((child) => {
+    blockGroup.remove(child);
+  });
+  blocks.clear();
+  if (!state) {
+    hoverDirty = true;
+    return;
+  }
+  state.blocks.forEach((entry) => {
+    const material = makeBlockMaterial(new THREE.Color(entry.color));
+    const mesh = new THREE.Mesh(blockGeometry, material);
+    const wire = new THREE.LineSegments(blockEdgesGeometry, wireframeMaterial);
+    wire.name = 'wireframe';
+    wire.visible = wireframeVisible;
+    mesh.add(wire);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.index = { ...entry.index };
+    mesh.userData.key = indexKey(entry.index);
+    mesh.userData.anim = { removing: false, desiredScale: getBlockScale() };
+    mesh.scale.setScalar(getBlockScale());
+    setPositionFromIndex(mesh.position, entry.index);
+    blocks.set(mesh.userData.key, mesh);
+    blockGroup.add(mesh);
+  });
+  resnapBlocks();
+  hoverDirty = true;
+}
+function updateHistoryButtons() {
+  if (undoButton) undoButton.disabled = history.length <= 1;
+  if (redoButton) redoButton.disabled = redoStack.length === 0;
+}
+function pushHistoryState(state, clearRedo = false) {
+  if (!state) return;
+  if (clearRedo) redoStack.length = 0;
+  if (history.length >= historyLimit) history.shift();
+  history.push(state);
+  updateHistoryButtons();
+}
+function undoLast() {
+  if (history.length <= 1) return;
+  const current = history.pop();
+  if (current) {
+    if (redoStack.length >= historyLimit) redoStack.shift();
+    redoStack.push(current);
+  }
+  restoreState(history[history.length - 1]);
+  updateHistoryButtons();
+}
+function redoLast() {
+  if (!redoStack.length) return;
+  const snapshot = redoStack.pop();
+  if (!snapshot) return;
+  pushHistoryState(snapshot, false);
+  restoreState(snapshot);
+}
+function finalizeStrokeHistory() {
+  if (!strokeActive) return;
+  if (actionDirty) {
+    pushHistoryState(snapshotState(), true);
+  }
+  strokeActive = false;
+  actionDirty = false;
 }
 const lastActionTime = { add: -Infinity, remove: -Infinity, paint: -Infinity };
 const minScaleValue = 0.0001;
@@ -323,6 +407,7 @@ function addBlockAt(index) {
   mesh.userData.anim = { removing: false, desiredScale: getBlockScale() };
   blocks.set(key, mesh);
   blockGroup.add(mesh);
+  markHistoryChange();
 }
 
 function removeBlockAt(key) {
@@ -331,6 +416,7 @@ function removeBlockAt(key) {
   const anim = mesh.userData.anim || {};
   anim.removing = true;
   mesh.userData.anim = anim;
+  markHistoryChange();
 }
 
 function resnapBlocks() {
@@ -510,6 +596,7 @@ function handlePaint() {
       const mesh = blocks.get(hoverState.key);
       if (mesh) {
         scheduleColorLerp(mesh, currentColor);
+        markHistoryChange();
       }
       lastActionTime.paint = now;
     }
@@ -528,6 +615,8 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
       pointerState.mode = event.button === 0 ? 'add' : 'remove';
     }
     lastActionTime[pointerState.mode] = -Infinity; // allow immediate first action
+    strokeActive = true;
+    actionDirty = false;
     renderer.domElement.setPointerCapture(event.pointerId);
     updatePointer(event);
     updateHoverTarget();
@@ -546,6 +635,7 @@ renderer.domElement.addEventListener('pointerup', (event) => {
     pointerState.down = false;
     pointerState.mode = null;
     renderer.domElement.releasePointerCapture(event.pointerId);
+    finalizeStrokeHistory();
     updateHoverTarget();
   }
 });
@@ -579,6 +669,8 @@ const wireframeToggle = document.getElementById('wireframe-toggle');
 const fogToggle = document.getElementById('fog-toggle');
 const gridToggle = document.getElementById('grid-toggle');
 const distanceToggle = document.getElementById('distance-toggle');
+const undoButton = document.getElementById('undo-button');
+const redoButton = document.getElementById('redo-button');
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
@@ -767,6 +859,18 @@ function setGridVisible(on) {
 if (gridToggle) {
   gridToggle.addEventListener('change', (e) => {
     setGridVisible(Boolean(e.target.checked));
+  });
+}
+if (undoButton) {
+  undoButton.addEventListener('click', () => {
+    finalizeStrokeHistory();
+    undoLast();
+  });
+}
+if (redoButton) {
+  redoButton.addEventListener('click', () => {
+    finalizeStrokeHistory();
+    redoLast();
   });
 }
 function setDistanceVisible(on) {
@@ -986,3 +1090,4 @@ updateDistanceCircle();
 setGridVisible(Boolean(gridToggle && gridToggle.checked));
 setDistanceVisible(Boolean(distanceToggle && distanceToggle.checked));
 addBlockAt({ x: 0, y: 0, z: 0 });
+pushHistoryState(snapshotState());
