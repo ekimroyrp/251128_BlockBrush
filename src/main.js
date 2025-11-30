@@ -273,6 +273,7 @@ function createDistanceCircle() {
   distanceCircle.rotation.x = -Math.PI / 2;
   distanceCircle.position.y = 0.001;
   distanceCircle.renderOrder = 1;
+  distanceCircle.visible = distanceVisible;
   scene.add(distanceCircle);
 }
 
@@ -577,6 +578,7 @@ const swatches = Array.from(document.querySelectorAll('#color-swatches button'))
 const wireframeToggle = document.getElementById('wireframe-toggle');
 const fogToggle = document.getElementById('fog-toggle');
 const gridToggle = document.getElementById('grid-toggle');
+const distanceToggle = document.getElementById('distance-toggle');
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
@@ -585,6 +587,7 @@ let lastSavedColor = '#ffffff';
 let wireframeVisible = Boolean(wireframeToggle && wireframeToggle.checked);
 let fogVisible = Boolean(fogToggle && fogToggle.checked);
 let gridVisible = Boolean(gridToggle && gridToggle.checked);
+let distanceVisible = Boolean(distanceToggle && distanceToggle.checked);
 const rangeInputs = Array.from(document.querySelectorAll('input[type="range"]'));
 
 function updateRangeFill(el) {
@@ -764,6 +767,17 @@ function setGridVisible(on) {
 if (gridToggle) {
   gridToggle.addEventListener('change', (e) => {
     setGridVisible(Boolean(e.target.checked));
+  });
+}
+function setDistanceVisible(on) {
+  distanceVisible = on;
+  if (distanceCircle) {
+    distanceCircle.visible = distanceVisible;
+  }
+}
+if (distanceToggle) {
+  distanceToggle.addEventListener('change', (e) => {
+    setDistanceVisible(Boolean(e.target.checked));
   });
 }
 
@@ -970,4 +984,5 @@ setFogVisible(Boolean(fogToggle && fogToggle.checked));
 createDistanceCircle();
 updateDistanceCircle();
 setGridVisible(Boolean(gridToggle && gridToggle.checked));
+setDistanceVisible(Boolean(distanceToggle && distanceToggle.checked));
 addBlockAt({ x: 0, y: 0, z: 0 });
