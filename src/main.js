@@ -343,12 +343,13 @@ function exportBlocksToOBJ() {
     tempMatrix.compose(mesh.position, mesh.quaternion, mesh.scale);
     tempNormalMatrix.getNormalMatrix(tempMatrix);
     const { r, g, b } = mesh.material.color;
+    const r255 = Math.round(r * 255);
+    const g255 = Math.round(g * 255);
+    const b255 = Math.round(b * 255);
     for (let i = 0; i < basePos.length; i += 3) {
       tempVec3.set(basePos[i], basePos[i + 1], basePos[i + 2]).applyMatrix4(tempMatrix);
       lines.push(
-        `v ${tempVec3.x.toFixed(5)} ${tempVec3.y.toFixed(5)} ${tempVec3.z.toFixed(5)} ${r.toFixed(
-          6
-        )} ${g.toFixed(6)} ${b.toFixed(6)}`
+        `v ${tempVec3.x.toFixed(5)} ${tempVec3.y.toFixed(5)} ${tempVec3.z.toFixed(5)} ${r255} ${g255} ${b255}`
       );
     }
     for (let i = 0; i < baseNorm.length; i += 3) {
