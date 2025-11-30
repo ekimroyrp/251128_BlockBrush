@@ -90,7 +90,7 @@ window.addEventListener('keyup', (event) => {
 const hemiLight = new THREE.HemisphereLight('#cfe8ff', '#0f1f33', 1.2);
 scene.add(hemiLight);
 const dirLight = new THREE.DirectionalLight('#ffc78a', 1.8);
-dirLight.position.set(72, 140, 72);
+dirLight.position.set(39, 140, 94); // ~22.5° azimuth relative to +Z
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(4096, 4096);
 dirLight.shadow.bias = -0.0005;
