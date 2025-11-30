@@ -96,14 +96,6 @@ dirLight.shadow.mapSize.set(4096, 4096);
 dirLight.shadow.bias = -0.0005;
 dirLight.shadow.normalBias = 0.0025;
 scene.add(dirLight);
-const backLight = new THREE.DirectionalLight('#a5c7ff', 0.45);
-backLight.position.set(-8, 6, -10);
-backLight.castShadow = true;
-backLight.shadow.mapSize.set(1024, 1024);
-backLight.shadow.camera.near = 1;
-backLight.shadow.camera.far = 60;
-backLight.shadow.bias = -0.0005;
-scene.add(backLight);
 const ambient = new THREE.AmbientLight(0xffffff, 0.12);
 scene.add(ambient);
 
