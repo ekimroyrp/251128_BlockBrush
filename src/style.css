@@ -390,6 +390,12 @@ input[type="range"]::-moz-range-track {
   gap: 8px;
 }
 
+.swatches-label {
+  font-size: 13px;
+  margin: 10px 0 12px;
+  color: inherit;
+}
+
 .swatches button {
   border: 1px solid rgba(0, 0, 0, 0.3);
   border-radius: 6px;
