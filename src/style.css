@@ -139,8 +139,8 @@ canvas {
 .switch {
   position: relative;
   display: inline-block;
-  width: 54px;
-  height: 30px;
+  width: 34px;
+  height: 19px;
 }
 
 .switch input {
@@ -163,10 +163,10 @@ canvas {
 .slider::before {
   position: absolute;
   content: "";
-  height: 24px;
-  width: 24px;
+  height: 15px;
+  width: 15px;
   left: 2px;
-  top: 2px;
+  top: 1px;
   background: linear-gradient(135deg, #ffffff, #e6eef5);
   border-radius: 50%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -179,7 +179,7 @@ canvas {
 }
 
 .switch input:checked + .slider::before {
-  transform: translateX(24px);
+  transform: translateX(13px);
 }
 
 input[type="range"] {
