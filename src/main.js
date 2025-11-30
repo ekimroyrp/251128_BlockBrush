@@ -576,12 +576,16 @@ const satValue = document.getElementById('sat-value');
 const lightValue = document.getElementById('light-value');
 const swatches = Array.from(document.querySelectorAll('#color-swatches button'));
 const wireframeToggle = document.getElementById('wireframe-toggle');
+const fogToggle = document.getElementById('fog-toggle');
+const gridToggle = document.getElementById('grid-toggle');
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
 let recentColors = swatches.map(() => '#ffffff');
 let lastSavedColor = '#ffffff';
 let wireframeVisible = Boolean(wireframeToggle && wireframeToggle.checked);
+let fogVisible = Boolean(fogToggle && fogToggle.checked);
+let gridVisible = Boolean(gridToggle && gridToggle.checked);
 const rangeInputs = Array.from(document.querySelectorAll('input[type="range"]'));
 
 function updateRangeFill(el) {
@@ -742,6 +746,27 @@ function setWireframeVisible(on) {
 if (wireframeToggle) {
   wireframeToggle.addEventListener('change', (e) => {
     setWireframeVisible(Boolean(e.target.checked));
+  });
+}
+function setFogVisible(on) {
+  fogVisible = on;
+  scene.fog = fogVisible ? new THREE.Fog(blueprintColor, 20, 140) : null;
+}
+if (fogToggle) {
+  fogToggle.addEventListener('change', (e) => {
+    setFogVisible(Boolean(e.target.checked));
+  });
+}
+function setGridVisible(on) {
+  gridVisible = on;
+  gridMesh.visible = gridVisible;
+  if (distanceCircle) {
+    distanceCircle.visible = gridVisible;
+  }
+}
+if (gridToggle) {
+  gridToggle.addEventListener('change', (e) => {
+    setGridVisible(Boolean(e.target.checked));
   });
 }
 
@@ -944,6 +969,8 @@ if (!Number.isNaN(initialHue) && !Number.isNaN(initialSat) && !Number.isNaN(init
 lastSavedColor = currentHex();
 renderRecentColors();
 setWireframeVisible(Boolean(wireframeToggle && wireframeToggle.checked));
-addBlockAt({ x: 0, y: 0, z: 0 });
+setFogVisible(Boolean(fogToggle && fogToggle.checked));
 createDistanceCircle();
 updateDistanceCircle();
+setGridVisible(Boolean(gridToggle && gridToggle.checked));
+addBlockAt({ x: 0, y: 0, z: 0 });
