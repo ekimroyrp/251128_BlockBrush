@@ -229,16 +229,43 @@ function snapshotState() {
   });
   return { blocks: entries };
 }
-function restoreState(state) {
-  blockGroup.children.slice().forEach((child) => {
-    blockGroup.remove(child);
-  });
-  blocks.clear();
+function applySnapshot(state) {
   if (!state) {
-    hoverDirty = true;
+    blocks.forEach((mesh) => {
+      const anim = mesh.userData.anim || {};
+      anim.removing = true;
+      mesh.userData.anim = anim;
+    });
     return;
   }
+  const target = new Map();
   state.blocks.forEach((entry) => {
+    target.set(indexKey(entry.index), entry);
+  });
+
+  // Remove or update existing blocks
+  blocks.forEach((mesh, key) => {
+    const targetEntry = target.get(key);
+    if (!targetEntry) {
+      const anim = mesh.userData.anim || {};
+      anim.removing = true;
+      mesh.userData.anim = anim;
+      return;
+    }
+    const anim = mesh.userData.anim || {};
+    anim.removing = false;
+    anim.desiredScale = getBlockScale();
+    mesh.userData.anim = anim;
+    const targetColor = new THREE.Color(targetEntry.color);
+    if (!mesh.material.color.equals(targetColor)) {
+      scheduleColorLerp(mesh, targetColor);
+    }
+    target.delete(key);
+  });
+
+  // Add new blocks that are in target but not currently present
+  target.forEach((entry) => {
+    const key = indexKey(entry.index);
     const material = makeBlockMaterial(new THREE.Color(entry.color));
     const mesh = new THREE.Mesh(blockGeometry, material);
     const wire = new THREE.LineSegments(blockEdgesGeometry, wireframeMaterial);
@@ -248,11 +275,11 @@ function restoreState(state) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.index = { ...entry.index };
-    mesh.userData.key = indexKey(entry.index);
+    mesh.userData.key = key;
     mesh.userData.anim = { removing: false, desiredScale: getBlockScale() };
-    mesh.scale.setScalar(getBlockScale());
+    mesh.scale.setScalar(minScaleValue);
     setPositionFromIndex(mesh.position, entry.index);
-    blocks.set(mesh.userData.key, mesh);
+    blocks.set(key, mesh);
     blockGroup.add(mesh);
   });
   resnapBlocks();
@@ -276,7 +303,7 @@ function undoLast() {
     if (redoStack.length >= historyLimit) redoStack.shift();
     redoStack.push(current);
   }
-  restoreState(history[history.length - 1]);
+  applySnapshot(history[history.length - 1]);
   updateHistoryButtons();
 }
 function redoLast() {
@@ -284,7 +311,7 @@ function redoLast() {
   const snapshot = redoStack.pop();
   if (!snapshot) return;
   pushHistoryState(snapshot, false);
-  restoreState(snapshot);
+  applySnapshot(snapshot);
 }
 function finalizeStrokeHistory() {
   if (!strokeActive) return;
