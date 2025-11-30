@@ -582,6 +582,21 @@ let lastHueInput = 0;
 let recentColors = swatches.map(() => '#ffffff');
 let lastSavedColor = '#ffffff';
 let wireframeVisible = Boolean(wireframeToggle && wireframeToggle.checked);
+const rangeInputs = Array.from(document.querySelectorAll('input[type="range"]'));
+
+function updateRangeFill(el) {
+  if (!el) return;
+  const min = parseFloat(el.min ?? 0);
+  const max = parseFloat(el.max ?? 100);
+  const val = parseFloat(el.value ?? min);
+  const pct = max === min ? 0 : ((val - min) / (max - min)) * 100;
+  el.style.setProperty('--range-progress', `${pct}%`);
+}
+rangeInputs.forEach((el) => {
+  updateRangeFill(el);
+  el.addEventListener('input', () => updateRangeFill(el));
+});
+
 function setGridSize(value) {
   gridSize = value;
   gridMaterial.uniforms.uGridSize.value = gridSize;
@@ -598,6 +613,7 @@ function setBlockGap(value) {
   gapValue.textContent = blockGap.toFixed(2);
   if (gapSlider) {
     gapSlider.value = blockGap.toFixed(2);
+    updateRangeFill(gapSlider);
   }
   resnapBlocks();
 }
@@ -611,6 +627,7 @@ function setBuildDistance(value) {
   if (!pointerState.down) {
     updateHoverTarget();
   }
+  updateRangeFill(distanceSlider);
   updateDistanceCircle();
 }
 distanceSlider.addEventListener('input', (event) => {
@@ -620,6 +637,7 @@ function setBuildRate(value) {
   buildRate = value;
   buildInterval = 1000 / buildRate;
   buildValue.textContent = `${Math.round(buildRate)}`;
+  updateRangeFill(buildSlider);
 }
 const tempHSLColor = new THREE.Color();
 function updateSliderGradients() {
@@ -683,14 +701,17 @@ function syncColorControls(forcedHsl) {
     const hueDisplay = Math.max(0, Math.min(360, Math.round(lastHueInput)));
     hueSlider.value = hueDisplay;
     hueValue.textContent = `${hueDisplay}`;
+    updateRangeFill(hueSlider);
   }
   if (satSlider && satValue) {
     satSlider.value = Math.round(hslState.s * 100);
     satValue.textContent = `${satSlider.value}`;
+    updateRangeFill(satSlider);
   }
   if (lightSlider && lightValue) {
     lightSlider.value = Math.round(hslState.l * 100);
     lightValue.textContent = `${lightSlider.value}`;
+    updateRangeFill(lightSlider);
   }
   updateSliderGradients();
 }
