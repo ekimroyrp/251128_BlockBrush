@@ -760,9 +760,6 @@ if (fogToggle) {
 function setGridVisible(on) {
   gridVisible = on;
   gridMesh.visible = gridVisible;
-  if (distanceCircle) {
-    distanceCircle.visible = gridVisible;
-  }
 }
 if (gridToggle) {
   gridToggle.addEventListener('change', (e) => {
