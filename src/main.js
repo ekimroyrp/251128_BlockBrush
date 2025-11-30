@@ -259,8 +259,8 @@ function restoreState(state) {
   hoverDirty = true;
 }
 function updateHistoryButtons() {
-  if (undoButton) undoButton.disabled = history.length <= 1;
-  if (redoButton) redoButton.disabled = redoStack.length === 0;
+  if (undoButton) undoButton.disabled = false;
+  if (redoButton) redoButton.disabled = false;
 }
 function pushHistoryState(state, clearRedo = false) {
   if (!state) return;
