@@ -770,8 +770,11 @@ const undoButton = document.getElementById('undo-button');
 const redoButton = document.getElementById('redo-button');
 const resetButton = document.getElementById('reset-button');
 const exportButton = document.getElementById('export-button');
+const instructionsButton = document.getElementById('instructions-button');
+const instructionsPopover = document.getElementById('instructions-popover');
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
+let instructionsPopoverOpen = false;
 let lastHueInput = 0;
 let recentColors = swatches.map((_, idx) => (idx === 0 ? '#ff9c00' : '#ffffff'));
 let lastSavedColor = '#ffffff';
@@ -1020,6 +1023,20 @@ if (colorChip) {
     toggleColorPopover();
   });
 }
+function toggleInstructionsPopover(forceState) {
+  const next = typeof forceState === 'boolean' ? forceState : !instructionsPopoverOpen;
+  instructionsPopoverOpen = next;
+  if (instructionsPopover) {
+    instructionsPopover.classList.toggle('hidden', !next);
+    instructionsPopover.classList.toggle('open', next);
+  }
+}
+if (instructionsButton) {
+  instructionsButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleInstructionsPopover();
+  });
+}
 if (hueSlider && satSlider && lightSlider) {
   const onHslChange = () => {
     let rawHue = parseFloat(hueSlider.value);
@@ -1066,18 +1083,32 @@ if (swatches.length > 0) {
   });
 }
 window.addEventListener('click', (event) => {
-  if (!colorPopoverOpen) return;
-  if (
-    colorPopover &&
-    !colorPopover.contains(event.target) &&
-    colorChip &&
-    !colorChip.contains(event.target)
-  ) {
-    toggleColorPopover(false);
+  if (colorPopoverOpen) {
+    if (
+      colorPopover &&
+      !colorPopover.contains(event.target) &&
+      colorChip &&
+      !colorChip.contains(event.target)
+    ) {
+      toggleColorPopover(false);
+    }
+  }
+  if (instructionsPopoverOpen) {
+    if (
+      instructionsPopover &&
+      !instructionsPopover.contains(event.target) &&
+      instructionsButton &&
+      !instructionsButton.contains(event.target)
+    ) {
+      toggleInstructionsPopover(false);
+    }
   }
 });
 window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && colorPopoverOpen) toggleColorPopover(false);
+  if (event.key === 'Escape') {
+    if (colorPopoverOpen) toggleColorPopover(false);
+    if (instructionsPopoverOpen) toggleInstructionsPopover(false);
+  }
 });
 buildSlider.addEventListener('input', (event) => {
   setBuildRate(parseFloat(event.target.value));
