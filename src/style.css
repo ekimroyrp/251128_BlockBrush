@@ -282,10 +282,6 @@ input[type="range"]::-moz-range-track {
   letter-spacing: 0.03em;
 }
 
-#block-color-value {
-  display: none;
-}
-
 .color-popover {
   position: absolute;
   left: calc(100% + 24px);
