@@ -471,13 +471,17 @@ input[type="range"]::-moz-range-track {
   margin-top: 6px;
 }
 
+.instructions-control {
+  margin-bottom: 2px;
+}
+
 #instructions-popover {
   top: 6px;
 }
 
 .instructions-list {
   list-style: none;
-  padding: 0;
+  padding: 0 4px 0 0;
   margin: 6px 0 0;
   color: #f5f7fb;
   font-size: 14px;
