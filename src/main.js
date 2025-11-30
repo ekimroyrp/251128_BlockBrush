@@ -612,7 +612,7 @@ gridSlider.addEventListener('input', (event) => {
   setGridSize(parseFloat(event.target.value));
 });
 function setBlockGap(value) {
-  const maxGap = gridSize * 0.49;
+  const maxGap = gridSize * 0.5;
   blockGap = Math.max(0, Math.min(value, maxGap));
   gapValue.textContent = blockGap.toFixed(2);
   if (gapSlider) {
@@ -626,7 +626,7 @@ gapSlider.addEventListener('input', (event) => {
 });
 function setBuildDistance(value) {
   buildDistance = Math.max(0, value);
-  distanceValue.textContent = `${Math.round(buildDistance)}`;
+  distanceValue.textContent = `${buildDistance.toFixed(1)}`;
   hoverDirty = true;
   if (!pointerState.down) {
     updateHoverTarget();
@@ -640,7 +640,7 @@ distanceSlider.addEventListener('input', (event) => {
 function setBuildRate(value) {
   buildRate = value;
   buildInterval = 1000 / buildRate;
-  buildValue.textContent = `${Math.round(buildRate)}`;
+  buildValue.textContent = `${buildRate.toFixed(1)}`;
   updateRangeFill(buildSlider);
 }
 const tempHSLColor = new THREE.Color();
