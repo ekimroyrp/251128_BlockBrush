@@ -12,7 +12,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.domElement.style.touchAction = 'none';
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.25;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
@@ -87,16 +87,16 @@ window.addEventListener('keyup', (event) => {
 });
 
 // Lights
-const hemiLight = new THREE.HemisphereLight('#f2f7ff', '#1a2330', 0.9);
+const hemiLight = new THREE.HemisphereLight('#cfe8ff', '#0f1f33', 1.05);
 scene.add(hemiLight);
-const dirLight = new THREE.DirectionalLight('#ffd8a8', 1.25);
+const dirLight = new THREE.DirectionalLight('#ffc78a', 1.6);
 dirLight.position.set(72, 140, 72);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(4096, 4096);
 dirLight.shadow.bias = -0.0005;
 dirLight.shadow.normalBias = 0.0025;
 scene.add(dirLight);
-const ambient = new THREE.AmbientLight(0xffffff, 0.12);
+const ambient = new THREE.AmbientLight(0xffffff, 0.08);
 scene.add(ambient);
 
 // Shadow receiver plane
