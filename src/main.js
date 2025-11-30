@@ -581,7 +581,7 @@ const gridToggle = document.getElementById('grid-toggle');
 const hslState = { h: 20 / 360, s: 1, l: 0.5 };
 let colorPopoverOpen = false;
 let lastHueInput = 0;
-let recentColors = swatches.map(() => '#ffffff');
+let recentColors = swatches.map((_, idx) => (idx === 0 ? '#ff9c00' : '#ffffff'));
 let lastSavedColor = '#ffffff';
 let wireframeVisible = Boolean(wireframeToggle && wireframeToggle.checked);
 let fogVisible = Boolean(fogToggle && fogToggle.checked);
