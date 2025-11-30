@@ -1,17 +1,16 @@
 # 251128_BlockBrush
 
-BlockBrush is a blueprint-styled Three.js prototype for painting and erasing voxel blocks on an infinite, fading grid. It includes a draggable translucent UI, grid-size control, hover preview, and mouse-driven block placement/removal with orbit/pan camera controls.
+BlockBrush is a blueprint-styled Three.js sandbox for building, painting, undoing/redoing, and exporting voxel blocks on an infinite fading grid. It ships with a draggable translucent UI, animated add/remove/paint workflows, history controls, instructions popover, and an OBJ export that preserves per-block colors.
 
 ## Features
 - Infinite blueprint grid with distance fade and crisp white lines
-- Draggable, blurred blueprint UI panel with block size slider (affects grid and cube snap)
-- Block gap slider to create space between cubes
-- Hover ghost preview for placement and deletion targets
-- Block painting (LMB drag) and erasing (RMB drag) snapped to grid, stacking on hit faces
+- Draggable, blurred UI panel with sliders for block size, gap, build distance, and build speed
+- Hover ghost preview, animated add/remove/paint actions, and history-aware undo/redo with the same scale-up/scale-down transitions
+- Reset button that smoothly shrinks all blocks out; Export button that saves an OBJ with vertex colors
+- Color picker and palette with popover; instructions popover matching UI styling
+- Toggles for wireframe, grid, distance circle, and fog visibility
+- Main sun/shadow setup with sharpened shadows for tall stacks
 - Orbit (MMB), pan (Shift+MMB), and scroll zoom camera controls
-- Build speed slider to throttle add/remove while dragging
-- Build distance slider to limit how far from the origin blocks can be added
-- Block color picker; Shift + LMB paints existing blocks to the current color
 
 ## Getting Started
 1. Clone the repository: `git clone https://github.com/ekimroyrp/251128_BlockBrush.git`
@@ -21,6 +20,9 @@ BlockBrush is a blueprint-styled Three.js prototype for painting and erasing vox
 5. Build for production: `npm run build`
 
 ## Controls
-- Left click + drag: add blocks on grid or stack onto hit faces
-- Right click + drag: delete blocks under cursor
-- Middle mouse: orbit; Shift + middle mouse: pan; Scroll: zoom
+- LMB + drag: add blocks on grid or stack onto hit faces
+- RMB + drag: remove blocks under cursor
+- Shift + LMB + drag: paint blocks to the current color
+- MMB: orbit camera
+- Shift + MMB: pan camera
+- Scroll: zoom
